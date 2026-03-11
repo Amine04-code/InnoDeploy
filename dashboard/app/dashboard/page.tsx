@@ -1,31 +1,20 @@
 "use client";
 
-import { useAuthStore } from "@/store/authStore";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { FolderKanban, GitBranch, Activity, Users } from "lucide-react";
-
-/** Overview stat cards shown on the main dashboard */
-const stats = [
-  { label: "Projects", value: "0", icon: FolderKanban, color: "text-blue-500" },
-  { label: "Pipelines", value: "0", icon: GitBranch, color: "text-violet-500" },
-  { label: "Deployments", value: "0", icon: Activity, color: "text-emerald-500" },
-  { label: "Team Members", value: "1", icon: Users, color: "text-amber-500" },
-];
+import GreetingHeader from "@/components/GreetingHeader";
+import StatsGrid from "@/components/StatsGrid";
+import RecentPipelinesTable from "@/components/RecentPipelinesTable";
+import ServiceHealthMap from "@/components/ServiceHealthMap";
+import DeployActivityChart from "@/components/DeployActivityChart";
+import AlertsFeed from "@/components/AlertsFeed";
+import QuickActions from "@/components/QuickActions";
 
 export default function DashboardPage() {
   const isReady = useRequireAuth();
-  const { user } = useAuthStore();
 
-  if (!isReady) return null; // wait for auth check
+  if (!isReady) return null;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -35,45 +24,17 @@ export default function DashboardPage() {
         <Navbar />
 
         <main className="flex-1 p-6 space-y-6">
-          {/* ── Welcome banner ──────────────────── */}
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Welcome back, {user?.name ?? "User"} 👋
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Here&apos;s an overview of your InnoDeploy workspace.
-            </p>
+          <GreetingHeader />
+          <StatsGrid />
+          <QuickActions />
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <DeployActivityChart />
+            <ServiceHealthMap />
           </div>
 
-          {/* ── Stats grid ──────────────────────── */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {stats.map(({ label, value, icon: Icon, color }) => (
-              <Card key={label}>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardDescription>{label}</CardDescription>
-                  <Icon className={`h-5 w-5 ${color}`} />
-                </CardHeader>
-                <CardContent>
-                  <CardTitle className="text-3xl">{value}</CardTitle>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* ── Recent activity placeholder ──────── */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Recent Activity</CardTitle>
-              <CardDescription>
-                Your latest pipeline runs and deployments will appear here.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
-                No activity yet — create your first project to get started.
-              </div>
-            </CardContent>
-          </Card>
+          <RecentPipelinesTable />
+          <AlertsFeed />
         </main>
       </div>
     </div>
