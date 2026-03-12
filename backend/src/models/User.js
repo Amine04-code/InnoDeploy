@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
       maxlength: 100,
     },
+
     email: {
       type: String,
       required: [true, "Email is required"],
@@ -19,20 +20,57 @@ const userSchema = new mongoose.Schema(
       trim: true,
       match: [/^\S+@\S+\.\S+$/, "Please provide a valid email"],
     },
+
     passwordHash: {
       type: String,
       required: [true, "Password is required"],
-      select: false, // exclude by default from queries
+      select: false,
     },
+
     role: {
       type: String,
       enum: ["owner", "admin", "developer", "viewer"],
       default: "developer",
     },
+
     organisationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Organisation",
       default: null,
+    },
+
+    avatar: {
+      type: String,
+      default: null,
+    },
+
+    preferences: {
+      theme: {
+        type: String,
+        enum: ["light", "dark", "system"],
+        default: "system",
+      },
+
+      defaultProject: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Project",
+        default: null,
+      },
+
+      notifications: {
+        email: {
+          type: Boolean,
+          default: true,
+        },
+        slack: {
+          type: Boolean,
+          default: false,
+        },
+        push: {
+          type: Boolean,
+          default: true,
+        },
+      },
     },
   },
   { timestamps: true }

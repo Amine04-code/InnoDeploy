@@ -1,15 +1,15 @@
 "use client";
 
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import Sidebar from "@/components/Sidebar";
-import Navbar from "@/components/Navbar";
-import GreetingHeader from "@/components/GreetingHeader";
-import StatsGrid from "@/components/StatsGrid";
-import RecentPipelinesTable from "@/components/RecentPipelinesTable";
-import ServiceHealthMap from "@/components/ServiceHealthMap";
-import DeployActivityChart from "@/components/DeployActivityChart";
-import AlertsFeed from "@/components/AlertsFeed";
-import QuickActions from "@/components/QuickActions";
+import Sidebar from "@/components/shared/Sidebar";
+import Navbar from "@/components/shared/Navbar";
+import GreetingHeader from "@/components/homepage/GreetingHeader";
+import StatsGrid from "@/components/homepage/StatsGrid";
+import RecentPipelinesTable from "@/components/homepage/RecentPipelinesTable";
+import ServiceHealthMap from "@/components/homepage/ServiceHealthMap";
+import DeployActivityChart from "@/components/homepage/DeployActivityChart";
+import AlertsFeed from "@/components/homepage/AlertsFeed";
+import QuickActions from "@/components/homepage/QuickActions";
 
 export default function DashboardPage() {
   const isReady = useRequireAuth();

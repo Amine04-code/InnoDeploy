@@ -70,8 +70,12 @@ export const authApi = {
 export const projectApi = {
   getProjects: () => apiClient.get("/projects"),
 
-  createProject: (payload: { name: string; description?: string }) =>
-    apiClient.post("/projects", payload),
+  createProject: (payload: {
+    name: string;
+    repoUrl: string;
+    branch: string;
+    envSetup?: string;
+  }) => apiClient.post("/projects", payload),
 };
 
 export default apiClient;
