@@ -5,6 +5,7 @@ const Metric = require("../models/Metric");
 const Pipeline = require("../models/Pipeline");
 const Project = require("../models/Project");
 const User = require("../models/User");
+const { getMonitorWorkerStatus } = require("../services/monitorWorker");
 
 const LOG_SEARCH_MODE = String(process.env.LOG_SEARCH_MODE || "text").toLowerCase();
 const LOG_ATLAS_INDEX = String(process.env.LOG_ATLAS_INDEX || "logs_index");
@@ -188,8 +189,26 @@ const getProjectStatus = async (req, res, next) => {
   }
 };
 
+const getMonitoringStreamInfo = async (_req, res, next) => {
+  try {
+    const worker = getMonitorWorkerStatus();
+
+    res.json({
+      worker,
+      websocket: {
+        transport: "redis-pubsub",
+        note: "Subscribe your websocket gateway to the stream channel for global updates, or to projectPrefix + <projectId> for scoped updates.",
+      },
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProjectMetrics,
   getProjectLogs,
   getProjectStatus,
+  getMonitoringStreamInfo,
 };
