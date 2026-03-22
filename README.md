@@ -35,13 +35,18 @@ This starts:
 
 - **Traefik reverse proxy** on `localhost:80` and `localhost:443`
 - **Backend API** routed by Traefik (default host: `api.localhost`)
+- **WebSocket gateway** routed by Traefik (default host: `ws.localhost`)
+- **Pipeline runner** worker service
+- **Deploy worker** service
 - **MongoDB** on `localhost:27018`
 - **Redis** on `localhost:6379`
+- **MinIO object store** on `localhost:9000` (console on `localhost:9001`)
 
 For local DNS on Windows, add this to your hosts file:
 
 ```text
 127.0.0.1 api.localhost
+127.0.0.1 ws.localhost
 ```
 
 ---
@@ -141,12 +146,37 @@ The dashboard will be available at **http://localhost:3000**.
 
 Defined in `docker/docker-compose.yml`:
 
-| Service  | Image      | Port(s) |
-|----------|------------|---------|
-| traefik  | traefik:v3 | 80, 443 |
-| mongodb  | mongo:7    | 27018   |
-| redis    | redis:7    | 6379    |
-| backend  | custom     | internal via Traefik |
+| Service         | Image      | Port(s) |
+|-----------------|------------|---------|
+| traefik         | traefik:v3 | 80, 443 |
+| backend         | custom     | internal via Traefik |
+| websocket       | custom     | internal via Traefik |
+| pipeline-runner | custom     | internal |
+| deploy-worker   | custom     | internal |
+| mongodb         | mongo:7    | 27018   |
+| redis           | redis:7    | 6379    |
+| minio           | minio      | 9000, 9001 |
+
+## Worker Behavior
+
+### Pipeline Runner
+- BullMQ worker that dequeues jobs from Redis queue `pipeline-jobs`
+- Each stage runs in an isolated Docker container
+- Source code is cloned from the job `repoUrl` + `branch` before each stage command
+- Stage logs are streamed in real time via Redis pub/sub channels:
+	- `pipeline:logs`
+	- `pipeline:logs:<pipelineId>`
+- WebSocket gateway forwards these channels to connected dashboard clients
+
+### Deploy Worker
+- BullMQ worker that dequeues jobs from Redis queue `deploy-jobs`
+- Supports deployment strategies:
+	- Rolling: replaces replicas one by one with health-check gate between each replacement
+	- Blue-Green: spins up green stack, switches route event, then drains old stack after configured delay
+	- Canary: routes configured canary traffic share, evaluates error-rate window, then promotes or fails
+- Emits deployment lifecycle and route-switch events through Redis channels:
+	- `deploy:events`
+	- `traefik:route-events`
 
 ---
 
