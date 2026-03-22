@@ -1,8 +1,10 @@
 import axios from "axios";
 
 // ── Axios instance with base URL from env ─────────────────
+export const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
+  baseURL: apiBaseUrl,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -30,10 +32,7 @@ apiClient.interceptors.response.use(
       const refreshToken = localStorage.getItem("refreshToken");
       if (refreshToken) {
         try {
-          const { data } = await axios.post(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-            { refreshToken }
-          );
+          const { data } = await axios.post(`${apiBaseUrl}/auth/refresh`, { refreshToken });
 
           localStorage.setItem("accessToken", data.accessToken);
           localStorage.setItem("refreshToken", data.refreshToken);
@@ -174,6 +173,20 @@ export const settingsApi = {
 
   deleteOrganisation: (payload: { confirmation: string }) =>
     apiClient.delete("/settings/organisation", { data: payload }),
+};
+
+export const pipelineApi = {
+  triggerRun: (projectId: string, payload: { branch?: string; config?: string }) =>
+    apiClient.post(`/projects/${projectId}/pipelines`, payload),
+
+  listProjectRuns: (projectId: string) =>
+    apiClient.get(`/projects/${projectId}/pipelines`),
+
+  getRun: (runId: string) =>
+    apiClient.get(`/pipelines/${runId}`),
+
+  cancelRun: (runId: string) =>
+    apiClient.post(`/pipelines/${runId}/cancel`),
 };
 
 export default apiClient;

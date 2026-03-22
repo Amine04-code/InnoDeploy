@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 
@@ -11,16 +11,18 @@ import { useAuthStore } from "@/store/authStore";
 export function useRequireAuth() {
   const router = useRouter();
   const { isAuthenticated, hydrate } = useAuthStore();
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     hydrate();
+    setIsHydrated(true);
   }, [hydrate]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (isHydrated && !isAuthenticated) {
       router.replace("/login");
     }
-  }, [isAuthenticated, router]);
+  }, [isHydrated, isAuthenticated, router]);
 
-  return isAuthenticated;
+  return isHydrated && isAuthenticated;
 }

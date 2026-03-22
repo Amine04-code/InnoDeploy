@@ -12,10 +12,16 @@ const {
 const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60;
 const OAUTH_STATE_TTL = 10 * 60;
 
-const getApiBaseUrl = () => process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 5000}/api`;
+const getTrimmedEnv = (key) => String(process.env[key] || "").trim();
+
+const getApiBaseUrl = () => getTrimmedEnv("API_BASE_URL") || `http://localhost:${process.env.PORT || 5000}/api`;
 const getOAuthRedirectUrl = () => process.env.OAUTH_REDIRECT_URL || `${process.env.CLIENT_URL || "http://localhost:3000"}/auth/callback`;
-const getGoogleCallbackUrl = () => process.env.GOOGLE_CALLBACK_URL || `${getApiBaseUrl()}/auth/google/callback`;
-const getGithubCallbackUrl = () => process.env.GITHUB_CALLBACK_URL || `${getApiBaseUrl()}/auth/github/callback`;
+const getGoogleCallbackUrl = () => getTrimmedEnv("GOOGLE_CALLBACK_URL") || `${getApiBaseUrl()}/auth/google/callback`;
+const getGithubCallbackUrl = () => getTrimmedEnv("GITHUB_CALLBACK_URL") || `${getApiBaseUrl()}/auth/github/callback`;
+const getGoogleClientId = () => getTrimmedEnv("GOOGLE_CLIENT_ID");
+const getGoogleClientSecret = () => getTrimmedEnv("GOOGLE_CLIENT_SECRET");
+const getGithubClientId = () => getTrimmedEnv("GITHUB_CLIENT_ID");
+const getGithubClientSecret = () => getTrimmedEnv("GITHUB_CLIENT_SECRET");
 
 const encodeUserParam = (user) => Buffer.from(JSON.stringify(user)).toString("base64url");
 
@@ -85,8 +91,8 @@ const exchangeGoogleCodeForProfile = async (code) => {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       code,
-      client_id: process.env.GOOGLE_CLIENT_ID || "",
-      client_secret: process.env.GOOGLE_CLIENT_SECRET || "",
+      client_id: getGoogleClientId(),
+      client_secret: getGoogleClientSecret(),
       redirect_uri: getGoogleCallbackUrl(),
       grant_type: "authorization_code",
     }),
@@ -125,8 +131,8 @@ const exchangeGithubCodeForProfile = async (code) => {
     },
     body: new URLSearchParams({
       code,
-      client_id: process.env.GITHUB_CLIENT_ID || "",
-      client_secret: process.env.GITHUB_CLIENT_SECRET || "",
+      client_id: getGithubClientId(),
+      client_secret: getGithubClientSecret(),
       redirect_uri: getGithubCallbackUrl(),
     }),
   });
@@ -333,13 +339,18 @@ const logout = async (req, res, next) => {
 
 const startGoogleOAuth = async (req, res, next) => {
   try {
-    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-      return res.status(500).json({ message: "Google OAuth is not configured" });
+    const googleClientId = getGoogleClientId();
+    const googleClientSecret = getGoogleClientSecret();
+    if (!googleClientId || !googleClientSecret) {
+      return redirectWithResult(res, {
+        error: "google_oauth_not_configured",
+        reason: "Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET",
+      });
     }
 
     const state = await createStateToken("google");
     const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-    googleAuthUrl.searchParams.set("client_id", process.env.GOOGLE_CLIENT_ID);
+    googleAuthUrl.searchParams.set("client_id", googleClientId);
     googleAuthUrl.searchParams.set("redirect_uri", getGoogleCallbackUrl());
     googleAuthUrl.searchParams.set("response_type", "code");
     googleAuthUrl.searchParams.set("scope", "openid email profile");
@@ -390,13 +401,18 @@ const googleOAuthCallback = async (req, res, next) => {
 
 const startGithubOAuth = async (req, res, next) => {
   try {
-    if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET) {
-      return res.status(500).json({ message: "GitHub OAuth is not configured" });
+    const githubClientId = getGithubClientId();
+    const githubClientSecret = getGithubClientSecret();
+    if (!githubClientId || !githubClientSecret) {
+      return redirectWithResult(res, {
+        error: "github_oauth_not_configured",
+        reason: "Missing GITHUB_CLIENT_ID or GITHUB_CLIENT_SECRET",
+      });
     }
 
     const state = await createStateToken("github");
     const githubAuthUrl = new URL("https://github.com/login/oauth/authorize");
-    githubAuthUrl.searchParams.set("client_id", process.env.GITHUB_CLIENT_ID);
+    githubAuthUrl.searchParams.set("client_id", githubClientId);
     githubAuthUrl.searchParams.set("redirect_uri", getGithubCallbackUrl());
     githubAuthUrl.searchParams.set("scope", "read:user user:email");
     githubAuthUrl.searchParams.set("state", state);
