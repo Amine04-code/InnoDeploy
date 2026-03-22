@@ -1,22 +1,58 @@
-version: "3.9"
-
 services:
+  # ── Traefik Reverse Proxy ───────────────────────────────
+  traefik:
+    image: traefik:v3.1
+    container_name: innodeploy-traefik
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      - --certificatesresolvers.letsencrypt.acme.email=${TRAEFIK_ACME_EMAIL:-admin@example.com}
+      - --certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme/acme.json
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      - --api.dashboard=${TRAEFIK_DASHBOARD_ENABLED:-false}
+      - --log.level=${TRAEFIK_LOG_LEVEL:-INFO}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-acme:/etc/traefik/acme
+    networks:
+      - innodeploy-net
+
   # ── Backend API ──────────────────────────────────────────
   backend:
     build:
       context: ../backend
       dockerfile: Dockerfile
-    container_name: innodeploy-backend
     restart: unless-stopped
-    ports:
-      - "5000:5000"
     env_file:
       - ../backend/.env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
+      - traefik
       - mongodb
       - redis
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.innodeploy-api.rule=Host(`${TRAEFIK_API_HOST:-api.localhost}`)
+      - traefik.http.routers.innodeploy-api.entrypoints=websecure
+      - traefik.http.routers.innodeploy-api.tls=true
+      - traefik.http.routers.innodeploy-api.tls.certresolver=letsencrypt
+      - traefik.http.services.innodeploy-api.loadbalancer.server.port=5000
+      - traefik.http.middlewares.innodeploy-ratelimit.ratelimit.average=${TRAEFIK_RATE_LIMIT_AVERAGE:-120}
+      - traefik.http.middlewares.innodeploy-ratelimit.ratelimit.burst=${TRAEFIK_RATE_LIMIT_BURST:-60}
+      - traefik.http.middlewares.innodeploy-ipallow.ipallowlist.sourcerange=${TRAEFIK_IP_ALLOWLIST:-0.0.0.0/0,::/0}
+      - traefik.http.middlewares.innodeploy-staging-auth.basicauth.users=${TRAEFIK_STAGING_BASIC_AUTH_USERS:-}
+      - traefik.http.middlewares.innodeploy-chain.chain.middlewares=innodeploy-ratelimit,innodeploy-ipallow
+      - traefik.http.routers.innodeploy-api.middlewares=innodeploy-chain@docker${TRAEFIK_ENABLE_STAGING_AUTH:+,innodeploy-staging-auth@docker}
     networks:
       - innodeploy-net
 
@@ -45,6 +81,7 @@ services:
       - innodeploy-net
 
 volumes:
+  traefik-acme:
   mongo-data:
   redis-data:
 

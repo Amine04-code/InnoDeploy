@@ -23,17 +23,26 @@ innodeploy/
 
 ---
 
-## 1 — Start Infrastructure (MongoDB + Redis)
+## 1 — Start Infrastructure (Traefik + Backend + MongoDB + Redis)
 
 ```bash
 cd docker
+cp .env.example .env
 docker compose up -d
 ```
 
 This starts:
 
-- **MongoDB** on `localhost:27017`
+- **Traefik reverse proxy** on `localhost:80` and `localhost:443`
+- **Backend API** routed by Traefik (default host: `api.localhost`)
+- **MongoDB** on `localhost:27018`
 - **Redis** on `localhost:6379`
+
+For local DNS on Windows, add this to your hosts file:
+
+```text
+127.0.0.1 api.localhost
+```
 
 ---
 
@@ -52,7 +61,7 @@ cp .env.example .env
 npm run dev
 ```
 
-The API will be available at **http://localhost:5000**.
+The API will be available via Traefik at **https://api.localhost**.
 
 ### API Endpoints (Sprint-1)
 
@@ -97,6 +106,19 @@ The dashboard will be available at **http://localhost:3000**.
 | `JWT_REFRESH_SECRET`| Refresh token signing secret         | —                                    |
 | `CLIENT_URL`        | Allowed CORS origin                  | `http://localhost:3000`              |
 
+### Docker Compose (`docker/.env`)
+
+| Variable                       | Description                                             | Default |
+|--------------------------------|---------------------------------------------------------|---------|
+| `TRAEFIK_ACME_EMAIL`           | Email used by Let's Encrypt ACME                        | `admin@example.com` |
+| `TRAEFIK_API_HOST`             | Hostname routed to backend API                          | `api.localhost` |
+| `TRAEFIK_DASHBOARD_ENABLED`    | Enables Traefik dashboard                               | `false` |
+| `TRAEFIK_RATE_LIMIT_AVERAGE`   | Average requests per second for rate-limit middleware   | `120` |
+| `TRAEFIK_RATE_LIMIT_BURST`     | Burst requests for rate-limit middleware                | `60` |
+| `TRAEFIK_IP_ALLOWLIST`         | CIDR list allowed through proxy                         | `0.0.0.0/0,::/0` |
+| `TRAEFIK_STAGING_BASIC_AUTH_USERS` | Basic auth users (`user:htpasswd_hash`) for staging | empty |
+| `TRAEFIK_ENABLE_STAGING_AUTH`  | Adds basic auth middleware when non-empty               | empty |
+
 ### Dashboard (`dashboard/.env.local`)
 
 | Variable              | Description        | Default                        |
@@ -119,11 +141,12 @@ The dashboard will be available at **http://localhost:3000**.
 
 Defined in `docker/docker-compose.yml`:
 
-| Service  | Image    | Port  |
-|----------|----------|-------|
-| mongodb  | mongo:7  | 27017 |
-| redis    | redis:7  | 6379  |
-| backend  | custom   | 5000  |
+| Service  | Image      | Port(s) |
+|----------|------------|---------|
+| traefik  | traefik:v3 | 80, 443 |
+| mongodb  | mongo:7    | 27018   |
+| redis    | redis:7    | 6379    |
+| backend  | custom     | internal via Traefik |
 
 ---
 
