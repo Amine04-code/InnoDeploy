@@ -6,6 +6,75 @@ const Pipeline = require("../models/Pipeline");
 const Project = require("../models/Project");
 const User = require("../models/User");
 
+const LOG_SEARCH_MODE = String(process.env.LOG_SEARCH_MODE || "text").toLowerCase();
+const LOG_ATLAS_INDEX = String(process.env.LOG_ATLAS_INDEX || "logs_index");
+
+const parseLimit = (value, fallback = 200) => Math.max(1, Math.min(Number(value || fallback), 1000));
+
+const findLogsWithSearch = async ({ projectId, baseQuery, searchTerm, limit }) => {
+  if (LOG_SEARCH_MODE === "atlas") {
+    const searchFilters = [{ equals: { path: "projectId", value: projectId } }];
+
+    if (baseQuery.level) searchFilters.push({ equals: { path: "level", value: baseQuery.level } });
+    if (baseQuery.environment) {
+      searchFilters.push({ equals: { path: "environment", value: baseQuery.environment } });
+    }
+    if (baseQuery.source) searchFilters.push({ equals: { path: "source", value: baseQuery.source } });
+    if (baseQuery.containerName) {
+      searchFilters.push({ equals: { path: "containerName", value: baseQuery.containerName } });
+    }
+
+    try {
+      const logs = await Log.aggregate([
+        {
+          $search: {
+            index: LOG_ATLAS_INDEX,
+            compound: {
+              must: [
+                {
+                  text: {
+                    query: searchTerm,
+                    path: ["message", "source", "containerName"],
+                  },
+                },
+              ],
+              filter: searchFilters,
+            },
+          },
+        },
+        { $sort: { createdAt: -1 } },
+        { $limit: limit },
+      ]);
+
+      return logs;
+    } catch (_atlasError) {
+      // Fall through to local index/regex search.
+    }
+  }
+
+  try {
+    const logs = await Log.find(
+      {
+        ...baseQuery,
+        $text: { $search: searchTerm },
+      },
+      { score: { $meta: "textScore" } }
+    )
+      .sort({ score: { $meta: "textScore" }, createdAt: -1 })
+      .limit(limit);
+
+    if (logs.length > 0) {
+      return logs;
+    }
+  } catch (_textSearchError) {
+    // Fall through to regex search when text index is unavailable.
+  }
+
+  return Log.find({ ...baseQuery, message: { $regex: searchTerm, $options: "i" } })
+    .sort({ createdAt: -1 })
+    .limit(limit);
+};
+
 const getOrganisationId = async (userId) => {
   const user = await User.findById(userId).select("organisationId");
   return user?.organisationId ?? null;
@@ -41,9 +110,7 @@ const getProjectMetrics = async (req, res, next) => {
       if (to) query.recordedAt.$lte = new Date(String(to));
     }
 
-    const metrics = await Metric.find(query)
-      .sort({ recordedAt: -1 })
-      .limit(Math.max(1, Math.min(Number(limit), 1000)));
+    const metrics = await Metric.find(query).sort({ recordedAt: -1 }).limit(parseLimit(limit));
 
     res.json({ metrics });
   } catch (error) {
@@ -63,17 +130,23 @@ const getProjectLogs = async (req, res, next) => {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    const { level, search, environment, source, limit = 200 } = req.query;
+    const { level, search, environment, source, container, limit = 200 } = req.query;
     const query = { projectId: project._id };
 
     if (level) query.level = String(level);
     if (environment) query.environment = String(environment);
     if (source) query.source = String(source);
-    if (search) query.message = { $regex: String(search), $options: "i" };
+    if (container) query.containerName = String(container);
 
-    const logs = await Log.find(query)
-      .sort({ createdAt: -1 })
-      .limit(Math.max(1, Math.min(Number(limit), 1000)));
+    const normalizedSearch = String(search || "").trim();
+    const logs = normalizedSearch
+      ? await findLogsWithSearch({
+          projectId: project._id,
+          baseQuery: query,
+          searchTerm: normalizedSearch,
+          limit: parseLimit(limit),
+        })
+      : await Log.find(query).sort({ createdAt: -1 }).limit(parseLimit(limit));
 
     res.json({ logs });
   } catch (error) {
