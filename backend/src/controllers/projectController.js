@@ -5,6 +5,8 @@ const Metric = require("../models/Metric");
 const Pipeline = require("../models/Pipeline");
 const User = require("../models/User");
 const mongoose = require("mongoose");
+const { buildDeploymentSteps } = require("../utils/deploymentStrategy");
+const { enqueueDeploymentRun } = require("../services/deploymentQueue");
 
 const getOrganisationId = async (userId) => {
   const user = await User.findById(userId).select("organisationId");
@@ -342,15 +344,13 @@ const upsertEnvironmentSecret = async (req, res, next) => {
 };
 
 const createDeploymentRun = async ({ project, req, runType }) => {
-  const steps = [
-    { name: "build", command: "docker build .", status: "pending", duration: 0, output: "" },
-    { name: "deploy", command: "kubectl apply -f deployment.yml", status: "pending", duration: 0, output: "" },
-  ];
+  const strategy = String(req.body.strategy || (runType === "rollback" ? "recreate" : "rolling"));
+  const steps = buildDeploymentSteps({ strategy, runType });
 
   const pipeline = await Pipeline.create({
     projectId: project._id,
     version: String(req.body.version || `v${Date.now()}`),
-    strategy: String(req.body.strategy || "rolling"),
+    strategy,
     runType,
     status: "pending",
     branch: String(req.body.branch || project.branch || "main"),
@@ -377,6 +377,7 @@ const triggerDeployment = async (req, res, next) => {
     }
 
     const run = await createDeploymentRun({ project, req, runType: "deployment" });
+    await enqueueDeploymentRun(run._id);
     project.status = "running";
     project.lastDeployAt = new Date();
     await project.save();
@@ -402,6 +403,7 @@ const rollbackDeployment = async (req, res, next) => {
     const run = await createDeploymentRun({ project, req, runType: "rollback" });
     run.strategy = "recreate";
     await run.save();
+    await enqueueDeploymentRun(run._id);
 
     project.status = "running";
     project.lastDeployAt = new Date();
