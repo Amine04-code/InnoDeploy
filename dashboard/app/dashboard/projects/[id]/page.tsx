@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import Sidebar from "@/components/shared/Sidebar";
 import Navbar from "@/components/shared/Navbar";
@@ -487,6 +487,7 @@ const LOG_CONTAINERS = ["web-1", "web-2", "web-3", "db", "redis"];
 export default function ProjectDetailPage() {
   const isReady = useRequireAuth();
   const params = useParams();
+  const searchParams = useSearchParams();
   const _projectId = params.id as string;
 
   const [activeTab, setActiveTab] = useState<SubNavTab>("Overview");
@@ -507,6 +508,22 @@ export default function ProjectDetailPage() {
   const [logContainer, setLogContainer] = useState("all");
   const [logMode, setLogMode] = useState<LogMode>("historical");
   const [logAutoScroll, setLogAutoScroll] = useState(true);
+
+  useEffect(() => {
+    const requestedTab = String(searchParams.get("tab") || "");
+    const requestedMode = String(searchParams.get("mode") || "");
+    const allowedTabs: SubNavTab[] = ["Overview", "Pipelines", "Monitoring", "Logs", "Settings"];
+
+    if (allowedTabs.includes(requestedTab as SubNavTab)) {
+      setActiveTab(requestedTab as SubNavTab);
+    }
+
+    if (requestedMode === "live") {
+      setLogMode("live");
+    } else if (requestedMode === "historical") {
+      setLogMode("historical");
+    }
+  }, [searchParams]);
 
   const filteredLogs = useMemo(() => {
     return mockLogEntries.filter((entry) => {

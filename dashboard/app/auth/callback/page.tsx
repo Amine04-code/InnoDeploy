@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import type { User } from "@/types";
@@ -19,41 +19,37 @@ const decodeUserParam = (raw: string): User | null => {
 
 export default function OAuthCallbackPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { setAuth } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
 
-  const payload = useMemo(() => {
-    const accessToken = searchParams.get("accessToken");
-    const refreshToken = searchParams.get("refreshToken");
-    const encodedUser = searchParams.get("user");
-    const callbackError = searchParams.get("error");
-    const callbackReason = searchParams.get("reason");
-
-    return { accessToken, refreshToken, encodedUser, callbackError, callbackReason };
-  }, [searchParams]);
-
   useEffect(() => {
-    if (payload.callbackError) {
-      const reason = payload.callbackReason ? ` (${payload.callbackReason})` : "";
+    const params = new URLSearchParams(window.location.search);
+    const accessToken = params.get("accessToken");
+    const refreshToken = params.get("refreshToken");
+    const encodedUser = params.get("user");
+    const callbackError = params.get("error");
+    const callbackReason = params.get("reason");
+
+    if (callbackError) {
+      const reason = callbackReason ? ` (${callbackReason})` : "";
       setError(`Social login failed${reason}. Please try again.`);
       return;
     }
 
-    if (!payload.accessToken || !payload.refreshToken || !payload.encodedUser) {
+    if (!accessToken || !refreshToken || !encodedUser) {
       setError("Login data is missing. Please retry.");
       return;
     }
 
-    const user = decodeUserParam(payload.encodedUser);
+    const user = decodeUserParam(encodedUser);
     if (!user) {
       setError("Unable to decode user session. Please retry.");
       return;
     }
 
-    setAuth(user, payload.accessToken, payload.refreshToken);
+    setAuth(user, accessToken, refreshToken);
     router.replace("/dashboard");
-  }, [payload, router, setAuth]);
+  }, [router, setAuth]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#061634] px-4 text-blue-50">

@@ -15,7 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Projects", href: "/dashboard/projects", icon: FolderKanban },
   { label: "Hosts", href: "/dashboard/hosts", icon: Server },
   { label: "Pipelines", href: "/dashboard/pipelines", icon: GitBranch },

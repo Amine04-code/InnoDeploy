@@ -1,8 +1,10 @@
 import axios from "axios";
 
+export const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+
 // ── Axios instance with base URL from env ─────────────────
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
+  baseURL: apiBaseUrl,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -97,6 +99,19 @@ export const hostApi = {
   testConnection: (hostId: string) => apiClient.post(`/hosts/${hostId}/test-connection`),
 
   removeHost: (hostId: string) => apiClient.delete(`/hosts/${hostId}`),
+};
+
+export const pipelineApi = {
+  triggerRun: (projectId: string, payload: { branch: string; config?: string }) =>
+    apiClient.post(`/projects/${projectId}/pipelines`, payload),
+
+  listProjectRuns: (projectId: string) => apiClient.get(`/projects/${projectId}/pipelines`),
+
+  getRun: (runId: string) => apiClient.get(`/pipelines/${runId}`),
+
+  cancelRun: (runId: string) => apiClient.post(`/pipelines/${runId}/cancel`),
+
+  getStageLog: (runId: string, stageName: string) => apiClient.get(`/pipelines/${runId}/logs/${stageName}`),
 };
 
 export const alertApi = {

@@ -298,18 +298,20 @@ export default function SettingsPage() {
                 </Card>
               </div>
 
-              <MembersTable
-                members={settings.members}
-                invitations={settings.invitations}
-                canManage={canManage}
-                currentUserId={user?.id}
-                onInvite={handleInvite}
-                onRoleChange={handleMemberRoleChange}
-                onRemove={handleRemoveMember}
-                onRevokeInvitation={handleRevokeInvitation}
-                busyMemberId={busyMemberId}
-                inviting={Boolean(saving.invite)}
-              />
+              <div id="members">
+                <MembersTable
+                  members={settings.members}
+                  invitations={settings.invitations}
+                  canManage={canManage}
+                  currentUserId={user?.id}
+                  onInvite={handleInvite}
+                  onRoleChange={handleMemberRoleChange}
+                  onRemove={handleRemoveMember}
+                  onRevokeInvitation={handleRevokeInvitation}
+                  busyMemberId={busyMemberId}
+                  inviting={Boolean(saving.invite)}
+                />
+              </div>
 
               <div className="grid gap-4 xl:grid-cols-2">
                 <NotificationChannels

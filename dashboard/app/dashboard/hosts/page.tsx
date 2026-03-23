@@ -14,6 +14,7 @@ import type { Host, HostFormData } from "@/types";
 export default function HostsPage() {
   const isReady = useRequireAuth();
   const [hosts, setHosts] = useState<Host[]>([]);
+  const [requestedHostId, setRequestedHostId] = useState<string | null>(null);
   const [selectedHostId, setSelectedHostId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -44,6 +45,22 @@ export default function HostsPage() {
 
     loadHosts();
   }, [isReady]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const nextHostId = new URLSearchParams(window.location.search).get("hostId");
+    setRequestedHostId(nextHostId);
+  }, []);
+
+  useEffect(() => {
+    if (!requestedHostId || hosts.length === 0) {
+      return;
+    }
+
+    if (hosts.some((host) => host.id === requestedHostId)) {
+      setSelectedHostId(requestedHostId);
+    }
+  }, [requestedHostId, hosts]);
 
   if (!isReady) return null;
 
