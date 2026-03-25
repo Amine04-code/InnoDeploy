@@ -1,6 +1,4 @@
-# InnoDeploy — DevOps SaaS Platform
-
-> Sprint-1 starter: authentication, dashboard shell, and base infrastructure.
+# InnoDeploy — DevOps SaaS .
 
 ```
 innodeploy/
