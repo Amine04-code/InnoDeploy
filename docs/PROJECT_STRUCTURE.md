@@ -1,283 +1,366 @@
-# InnoDeploy — Project Structure & Documentation
+# InnoDeploy - Project Structure and Full System Guide
 
-## Overview
+## A. What InnoDeploy Is
 
-**InnoDeploy** is a DevOps SaaS platform currently in **Sprint 1**. It provides multi-tenant user authentication, organisation management, and a dashboard shell. Future sprints will add project management, CI/CD pipelines, and deployment automation.
+InnoDeploy is a multi-tenant DevOps SaaS platform with three user-facing surfaces:
 
----
+- Web dashboard for teams and operators
+- REST API and background workers for orchestration
+- CLI for terminal-based workflows
 
-## Tech Stack
-
-| Layer        | Technology                                                        |
-| ------------ | ----------------------------------------------------------------- |
-| **Frontend** | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS      |
-| **Backend**  | Node.js 20, Express.js 4, Mongoose 8                             |
-| **Database** | MongoDB 7                                                        |
-| **Cache**    | Redis 7 (refresh token storage)                                  |
-| **Auth**     | JWT (access + refresh tokens), bcrypt password hashing            |
-| **State**    | Zustand (client), localStorage (persistence)                     |
-| **UI**       | Radix UI primitives, Lucide icons, class-variance-authority (CVA) |
-| **Infra**    | Docker Compose (3 services on bridge network)                     |
+It covers authentication, organization/project management, CI/CD pipelines, deployment automation, monitoring, alerting, logs, and notification dispatch.
 
 ---
 
-## Repository Structure
+## B. Tech Stack
 
-```
+| Layer | Technology |
+| --- | --- |
+| Frontend | Next.js (App Router), React, TypeScript, Tailwind CSS |
+| Backend | Node.js 20, Express.js 4, Mongoose 8 |
+| Data | MongoDB 7 |
+| Cache and Queue | Redis 7, BullMQ-style worker queues |
+| Auth | JWT (access + refresh), bcrypt |
+| Realtime | WebSocket gateway + Redis pub/sub |
+| Object Storage | MinIO |
+| Infra and Routing | Docker Compose + Traefik |
+| Client State | Zustand, localStorage, API query state |
+
+---
+
+## C. Repository Structure
+
+```text
 InnoDeploy/
-├── backend/                    # Express.js REST API
-│   ├── Dockerfile              # Node 20 Alpine production image
-│   ├── package.json
-│   ├── .env.example            # Environment variable template
-│   └── src/
-│       ├── server.js           # Entry point — connects DB/Redis, starts Express
-│       ├── app.js              # Express app setup, middleware, route mounting
-│       ├── config/
-│       │   ├── db.js           # MongoDB connection via Mongoose
-│       │   └── redis.js        # Redis client creation & connection
-│       ├── controllers/
-│       │   └── authController.js   # Register, login, refresh, logout logic
-│       ├── middleware/
-│       │   ├── authMiddleware.js    # JWT verification & role-based access
-│       │   └── errorMiddleware.js   # Global error handler (validation, duplicates)
-│       ├── models/
-│       │   ├── User.js         # User schema (bcrypt pre-save hook)
-│       │   └── Organisation.js # Organisation schema (members, plans)
-│       ├── routes/
-│       │   ├── authRoutes.js   # /api/auth/* route definitions
-│       │   └── projectRoutes.js# /api/projects/* stubs (Sprint 2)
-│       ├── services/           # Service layer (empty — future use)
-│       └── utils/
-│           └── jwt.js          # Token generation & verification helpers
-│
-├── dashboard/                  # Next.js frontend (App Router)
-│   ├── package.json
-│   ├── .env.example            # Frontend env template
-│   ├── next.config.js
-│   ├── tailwind.config.js
-│   ├── tsconfig.json
-│   ├── app/
-│   │   ├── layout.tsx          # Root layout (QueryClientProvider, auth hydration)
-│   │   ├── page.tsx            # Root page (redirects to /dashboard)
-│   │   ├── globals.css         # Global Tailwind styles
-│   │   ├── dashboard/
-│   │   │   └── page.tsx        # Protected dashboard with stats & welcome banner
-│   │   ├── login/
-│   │   │   └── page.tsx        # Login form
-│   │   └── register/
-│   │       └── page.tsx        # Registration form (with optional org)
-│   ├── components/
-│   │   ├── Navbar.tsx          # Top bar (user info, logout)
-│   │   ├── Sidebar.tsx         # Left nav (Dashboard, Projects, Pipelines, etc.)
-│   │   └── ui/                 # Reusable UI primitives (button, card, input, label)
-│   ├── hooks/
-│   │   └── useRequireAuth.ts   # Auth guard hook (redirects to /login if unauthenticated)
-│   ├── lib/
-│   │   ├── apiClient.ts        # Axios instance with interceptors (auth, token refresh)
-│   │   └── utils.ts            # Utility helpers (cn for class merging)
-│   ├── store/
-│   │   └── authStore.ts        # Zustand auth state (user, tokens, hydrate/clear)
-│   └── types/
-│       └── index.ts            # TypeScript interfaces (User, AuthResponse, Project, ApiError)
-│
-├── cli/                        # Node.js CLI package (innodeploy command)
-│   ├── package.json            # CLI dependencies + bin mapping
-│   ├── bin/
-│   │   └── innodeploy.js       # Command entrypoint (Commander)
-│   └── src/
-│       ├── config.js           # Local CLI auth/api config persistence
-│       └── prompts.js          # Interactive terminal prompts
-│
-├── docker/
-│   └── docker-compose.yml      # 3-service stack (backend, MongoDB, Redis)
-│
-└── docs/
-    ├── README.md               # Docs folder index
-    ├── architecture.md         # System architecture & auth flow diagram
-    └── PROJECT_STRUCTURE.md    # ← This file
+|- backend/                       # Express API, workers, services, data models
+|  |- Dockerfile
+|  |- package.json
+|  |- src/
+|  |  |- app.js                   # Express middleware + route mounting
+|  |  |- server.js                # Startup: DB/Redis connections + HTTP server
+|  |  |- config/
+|  |  |  |- db.js                 # MongoDB connection
+|  |  |  |- redis.js              # Redis client connection
+|  |  |- controllers/             # Route handlers by domain
+|  |  |- middleware/              # Auth + role checks + global error handling
+|  |  |- models/                  # MongoDB schemas (User, Org, Project, etc.)
+|  |  |- routes/                  # API endpoint groups
+|  |  |- services/                # Pipeline runner, deploy worker logic, logs, alerts
+|  |  |- utils/                   # JWT helpers and utility functions
+|  |  |- workers/                 # Worker entrypoints (pipeline, deploy)
+|
+|- dashboard/                     # Next.js dashboard app
+|  |- app/                        # App Router pages and layouts
+|  |- components/                 # Feature components + shared shell + UI primitives
+|  |- hooks/                      # Auth and preference hooks
+|  |- lib/                        # API client, settings i18n, preferences helpers
+|  |- store/                      # Zustand stores
+|  |- types/                      # Shared TypeScript interfaces
+|
+|- cli/                           # innodeploy command-line tool
+|  |- bin/innodeploy.js           # CLI entrypoint
+|  |- src/config.js               # Local auth/config persistence
+|  |- src/prompts.js              # Interactive terminal prompts
+|
+|- docker/
+|  |- docker-compose.yml          # Traefik + app services + MongoDB + Redis + MinIO
+|
+|- docs/
+|  |- README.md
+|  |- architecture.md
+|  |- PROJECT_STRUCTURE.md        # This file
+|
+|- InnoDeploy-Postman-Collection.json
+|- POSTMAN_TESTING_GUIDE.md
 ```
 
 ---
 
-## Data Models
+## D. Platform Components and Responsibilities
 
-### User
+### 1. Dashboard (Next.js)
 
-| Field          | Type     | Details                                         |
-| -------------- | -------- | ----------------------------------------------- |
-| `name`         | String   | Required, max 100 chars                         |
-| `email`        | String   | Required, unique, lowercase, email regex        |
-| `passwordHash` | String   | Required, excluded from queries (`select:false`) |
-| `role`         | String   | `owner` / `admin` / `developer` / `viewer`      |
-| `organisationId` | ObjectId | Ref to Organisation (nullable)               |
-| `createdAt`    | Date     | Auto-generated                                  |
-| `updatedAt`    | Date     | Auto-generated                                  |
+The dashboard is the primary UI for users. It includes:
 
-- Passwords are hashed with **bcrypt** (12 salt rounds) via a Mongoose pre-save hook.
-- Instance method `comparePassword(candidate)` verifies credentials.
+- Auth flows (login, register, callback)
+- Protected dashboard pages (overview, projects, pipelines, deployments, hosts, alerts, settings)
+- Realtime logs and monitoring views
+- User preferences (theme/language) and translated settings runtime
 
-### Organisation
+Key implementation points:
 
-| Field     | Type          | Details                                     |
-| --------- | ------------- | ------------------------------------------- |
-| `name`    | String        | Required, max 150 chars                     |
-| `slug`    | String        | Required, unique, lowercase, URL-safe       |
-| `plan`    | String        | `free` / `pro` / `enterprise`               |
-| `members` | Array         | `[{ userId, role, joinedAt }]`              |
-| `createdAt` | Date        | Auto-generated                              |
-| `updatedAt` | Date        | Auto-generated                              |
+- `useRequireAuth()` prevents unauthorized access to protected pages
+- `apiClient.ts` injects access tokens and performs refresh/retry logic on 401
+- Auth and user state are hydrated from local storage via Zustand
 
----
+### 2. Backend API (Express)
 
-## API Routes
+The backend exposes domain APIs and coordinates async workflows:
 
-| Method | Endpoint             | Auth     | Description                       |
-| ------ | -------------------- | -------- | --------------------------------- |
-| GET    | `/api/health`        | Public   | Health check (returns status, timestamp) |
-| POST   | `/api/auth/register` | Public   | Create user (+ optional org)      |
-| POST   | `/api/auth/login`    | Public   | Authenticate & receive tokens     |
-| POST   | `/api/auth/refresh`  | Public   | Exchange refresh token for new pair |
-| POST   | `/api/auth/logout`   | Bearer   | Revoke refresh token from Redis   |
-| GET    | `/api/projects`      | Bearer   | List projects (stub — Sprint 2)   |
-| POST   | `/api/projects`      | Bearer   | Create project (stub — Sprint 2)  |
+- Authentication and token lifecycle
+- Organization, project, host, pipeline, monitoring, alerts, settings, webhook endpoints
+- Queueing of long-running jobs (pipeline and deployment)
+- Publication of realtime events and logs
 
----
+### 3. Worker Layer
 
-## Authentication Flow
+Workers consume queue jobs and execute long-running operations outside request-response paths:
 
-```
-┌─────────────┐      POST /auth/login       ┌─────────────┐
-│  Dashboard   │ ─────────────────────────► │  Backend API  │
-│  (Next.js)   │                            │  (Express)    │
-│              │ ◄───────────────────────── │               │
-│              │   { accessToken (15m),     │               │
-│  Zustand +   │     refreshToken (7d),     │  Redis        │
-│  localStorage│     user }                 │  (stores      │
-│              │                            │   refresh     │
-│  Axios       │   Authorization:           │   tokens)     │
-│  interceptor │   Bearer <accessToken>     │               │
-│  attaches    │ ─────────────────────────► │  MongoDB      │
-│  token to    │                            │  (stores      │
-│  every req   │   On 401 → try refresh     │   users &     │
-│              │ ─────────────────────────► │   orgs)       │
-│              │                            │               │
-│  On refresh  │   If refresh fails →       │               │
-│  failure:    │   clear tokens, redirect   │               │
-│  → /login    │   to /login                │               │
-└─────────────┘                            └─────────────┘
-```
+- Pipeline runner worker
+- Deploy worker
+- Monitor worker
 
-1. User submits credentials via the login or register form.
-2. Backend validates, creates JWT **access token** (15 min expiry) and **refresh token** (7 day expiry).
-3. Refresh token is stored in **Redis** with key `refresh:<userId>` and a 7-day TTL.
-4. Dashboard saves both tokens + user object in **localStorage** and **Zustand** store.
-5. Axios request interceptor attaches `Authorization: Bearer <accessToken>` to every API call.
-6. On a **401 response**, the response interceptor silently attempts token refresh via `/api/auth/refresh`.
-7. If refresh succeeds, the original request is retried with the new token.
-8. If refresh fails, tokens are cleared and the user is redirected to `/login`.
-9. On **logout**, the backend deletes the refresh token from Redis, and the frontend clears local state.
+This keeps API responses fast and fault boundaries clearer.
+
+### 4. CLI (innodeploy)
+
+CLI enables terminal-first operations:
+
+- Authentication
+- Project commands
+- Pipeline trigger/status
+- Deploy/rollback
+- Logs and host utilities
 
 ---
 
-## Middleware
+## E. Data and Domain Models
 
-### `authMiddleware`
-Extracts the Bearer token from the `Authorization` header, verifies it using `verifyAccessToken()`, and attaches the decoded payload (`id`, `email`, `role`) to `req.user`. Returns **401** if the token is missing or invalid.
+Core model families in backend `models/`:
 
-### `requireRole(...roles)`
-Factory middleware that checks `req.user.role` against the provided allowed roles. Returns **403** if the user's role is not permitted.
+- Identity and tenancy: `User`, `Organisation`
+- Delivery domain: `Project`, `Pipeline`, `Host`
+- Observability: `Metric`, `Log`, `Alert`
 
-### `errorMiddleware`
-Global Express error handler:
-- **Mongoose ValidationError** → 400 with field-level error messages
-- **Duplicate key (code 11000)** → 409 with "already exists" message
-- **All other errors** → 500 with generic message (stack trace logged in dev)
+Representative model behavior:
 
----
-
-## Frontend Pages
-
-| Route         | Component              | Auth     | Description                              |
-| ------------- | ---------------------- | -------- | ---------------------------------------- |
-| `/`           | `page.tsx`             | —        | Redirects to `/dashboard`                |
-| `/login`      | `login/page.tsx`       | Public   | Email + password login form              |
-| `/register`   | `register/page.tsx`    | Public   | Registration with optional org name      |
-| `/dashboard`  | `dashboard/page.tsx`   | Protected| Welcome banner, stat cards, activity log |
-
-### Key Components
-- **Navbar** — Top bar with user name, role badge, and logout button.
-- **Sidebar** — Left navigation with links: Dashboard, Projects, Pipelines, Deployments, Settings. Shows app version in footer.
-- **UI primitives** (`components/ui/`) — Reusable `Button`, `Card`, `Input`, `Label` built on Radix UI + CVA.
+- `User` passwords are hashed with bcrypt before save
+- User roles support authorization boundaries (`owner`, `admin`, `developer`, `viewer`)
+- `Organisation` groups users and roles per tenant workspace
+- `Log` entries are retained with TTL behavior
+- `Metric` stores detailed host/service stats in addition to compatibility fields
 
 ---
 
-## Docker Setup
+## F. Authentication and Authorization Flow
 
-Three services on a shared `innodeploy-net` bridge network:
+1. User signs in or registers via dashboard or CLI.
+2. Backend validates credentials and issues:
+   - access token (short-lived)
+   - refresh token (longer-lived)
+3. Refresh token is stored in Redis (keyed by user context).
+4. Client sends `Authorization: Bearer <accessToken>` for protected routes.
+5. On token expiry (`401`), client attempts `/api/auth/refresh`.
+6. If refresh succeeds, original request is retried.
+7. If refresh fails, local auth is cleared and user returns to login.
+8. Logout revokes refresh token in Redis and clears client auth state.
 
-| Service    | Image          | Port  | Persistent Volume     |
-| ---------- | -------------- | ----- | --------------------- |
-| `backend`  | Custom (Node 20 Alpine) | 5000 | —              |
-| `mongodb`  | `mongo:7`      | 27017 | `mongo-data:/data/db` |
-| `redis`    | `redis:7`      | 6379  | `redis-data:/data`    |
+Authorization middleware:
 
-### Running with Docker
-
-```bash
-cd docker
-docker compose up -d        # Start all services
-docker compose logs -f       # Follow logs
-docker compose down          # Stop and remove containers
-```
-
-### Running Locally (development)
-
-```bash
-# 1. Start only databases via Docker
-cd docker
-docker compose up -d mongodb redis
-
-# 2. Backend
-cd backend
-cp .env.example .env         # Ensure MONGO_URI and REDIS_URL point to localhost
-npm install
-npm run dev                  # Starts on http://localhost:5000
-
-# 3. Dashboard
-cd dashboard
-cp .env.example .env
-npm install
-npm run dev                  # Starts on http://localhost:3000
-```
+- `authMiddleware`: verifies access token and injects user payload on request
+- `requireRole(...roles)`: enforces role-based access control
 
 ---
 
-## Environment Variables
+## G. API Surface (High-Level)
 
-### Backend (`.env`)
+Main route groups under `/api` include:
 
-| Variable             | Default                                | Description                  |
-| -------------------- | -------------------------------------- | ---------------------------- |
-| `PORT`               | `5000`                                 | Express server port          |
-| `MONGO_URI`          | `mongodb://localhost:27017/innodeploy`  | MongoDB connection string    |
-| `REDIS_URL`          | `redis://localhost:6379`                | Redis connection string      |
-| `JWT_SECRET`         | —                                      | Access token signing secret  |
-| `JWT_REFRESH_SECRET` | —                                      | Refresh token signing secret |
-| `CLIENT_URL`         | `http://localhost:3000`                 | Allowed CORS origin          |
+- `/auth` for register/login/refresh/logout
+- `/org` for organization management
+- `/projects` for project operations
+- `/pipelines` for pipeline CRUD and execution triggers
+- `/deployments` and worker-driven deployment flows (through project/pipeline operations)
+- `/hosts` for registered runtime hosts
+- `/monitoring` for health and metrics access
+- `/alerts` for alert listing and management
+- `/settings` for runtime settings and notification configuration
+- `/webhooks` for incoming external event triggers
+- `/health` for service health endpoint
 
-### Dashboard (`.env`)
-
-| Variable               | Default                        | Description           |
-| ---------------------- | ------------------------------ | --------------------- |
-| `NEXT_PUBLIC_API_URL`  | `http://localhost:5000/api`    | Backend API base URL  |
-
-> **Note:** When running the backend inside Docker, use Docker service names (`mongodb`, `redis`) instead of `localhost` in `MONGO_URI` and `REDIS_URL`.
+See route files in backend `src/routes/` for exact endpoints.
 
 ---
 
-## Sprint Roadmap
+## H. Queue and Worker Execution Model
 
-- **Sprint 1** (current) — Authentication, user/org management, dashboard shell
-- **Sprint 2** — Project CRUD, Git repository integration
-- **Sprint 3** — CI/CD pipeline configuration & execution
-- **Sprint 4** — Deployment automation & monitoring
+### Pipeline path
+
+1. API receives trigger request.
+2. Pipeline config is resolved (including `.innodeploy.yml` handling).
+3. Job is enqueued to Redis-backed queue.
+4. Pipeline worker executes stages, captures output, and streams log events.
+5. On successful stage completion, deployment jobs may be enqueued.
+
+### Deployment path
+
+Deploy worker supports strategy-specific rollout behavior:
+
+- Rolling: incrementally replace replicas with health checks
+- Blue/Green: bring up green stack, route switch, then drain old stack
+- Canary: partial traffic shift, evaluate error window, then promote/abort
+
+Workers emit lifecycle events for dashboards and external consumers.
+
+---
+
+## I. Monitoring, Alerting, and Notifications
+
+### Monitoring
+
+Monitor worker collects service and host health data with multiple probe modes:
+
+- HTTP probe
+- TCP probe
+- container-state fallback
+
+State transitions are failure-count based and configurable by env vars.
+
+### Metrics
+
+Detailed metrics include:
+
+- `cpu_percent`
+- `memory_mb`
+- `memory_percent`
+- `net_rx_bytes`
+- `net_tx_bytes`
+- `http_status`
+- `http_latency_ms`
+- `restart_count`
+- `uptime_s`
+- `disk_usage_mb`
+
+Legacy fields remain populated for compatibility.
+
+### Alerting
+
+Alert rules engine evaluates predefined and runtime rules (examples include CPU, memory, service down, latency, disk, certificate expiry).
+
+### Notification channels
+
+Notification dispatcher supports:
+
+- SMTP email (Nodemailer)
+- Slack webhook
+- Discord webhook
+- Expo push
+- generic webhook POST
+
+Settings API masks sensitive secrets in responses and preserves existing secrets when masked placeholders are submitted unchanged.
+
+---
+
+## J. Logs and Realtime Streaming
+
+Log collector parses stdout/stderr (JSON-aware), persists normalized records, and publishes realtime channels.
+
+WebSocket gateway subscribes to Redis pub/sub and forwards relevant streams to connected dashboard clients.
+
+Typical realtime domains include:
+
+- pipeline logs
+- deployment events
+- aggregated project logs
+- route-switch and lifecycle events
+
+---
+
+## K. Infrastructure and Runtime Topology
+
+Compose environment includes:
+
+- Traefik reverse proxy
+- Backend API service
+- WebSocket gateway service
+- Pipeline runner service
+- Deploy worker service
+- MongoDB
+- Redis
+- MinIO object storage
+
+Traefik routes hostnames such as API and WebSocket endpoints in local/dev setups.
+
+---
+
+## L. Environment Configuration
+
+### Backend env
+
+Important variables:
+
+- `PORT`
+- `MONGO_URI`
+- `REDIS_URL`
+- `JWT_SECRET`
+- `JWT_REFRESH_SECRET`
+- `CLIENT_URL`
+
+### Dashboard env
+
+- `NEXT_PUBLIC_API_URL`
+
+### Infra env (compose/proxy)
+
+Proxy and security behavior are controlled by compose env vars (Traefik hostnames, optional staging auth, rate limits, allowlists, ACME settings).
+
+---
+
+## M. Error Handling and Reliability Practices
+
+Global error middleware normalizes API failures:
+
+- Validation failures return 400 with field details
+- Duplicate keys return 409 conflict semantics
+- Unexpected errors return 500 with safe payloads
+
+Other reliability mechanisms:
+
+- Queue-based async processing for long tasks
+- Refresh-token revocation on logout
+- Health endpoints and monitor-worker state transitions
+- Realtime observability via logs and events
+
+---
+
+## N. Development Workflow
+
+### Typical local run
+
+1. Start infra dependencies via compose.
+2. Start backend (`npm run dev`).
+3. Start dashboard (`npm run dev`).
+4. Use Postman collection or CLI for API/flow validation.
+
+Reference files:
+
+- `InnoDeploy-Postman-Collection.json`
+- `POSTMAN_TESTING_GUIDE.md`
+
+---
+
+## O. Current Status and Roadmap
+
+Current branch state includes advanced monitoring and alerting capabilities on top of core authentication and dashboard foundations.
+
+Roadmap progression:
+
+- Sprint 1: auth, user/org management, dashboard shell
+- Sprint 2: project CRUD and repository integration
+- Sprint 3: pipeline config and execution workflows
+- Sprint 4: deployment automation and monitoring/alerting hardening
+
+---
+
+## Quick Orientation for New Contributors
+
+Start here if you are onboarding:
+
+1. Read `docs/architecture.md` for system context.
+2. Read backend route files to see API entry points.
+3. Trace one full flow:
+   - dashboard action -> API controller -> service -> queue -> worker -> websocket/log output.
+4. Use Postman collection to validate endpoints.
+5. Use CLI commands to test non-UI operational paths.
+
+This project is designed as a real control-plane style architecture, with clear separation between synchronous APIs, asynchronous execution, and realtime observability.
