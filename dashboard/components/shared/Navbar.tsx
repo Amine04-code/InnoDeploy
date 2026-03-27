@@ -7,6 +7,7 @@ import { authApi } from "@/lib/apiClient";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import { roleLabel, t } from "@/lib/settingsI18n";
 import { Button } from "@/components/ui/button";
+import type { MemberRole } from "@/types";
 
 export default function Navbar() {
   const language = useLanguagePreference();
@@ -36,7 +37,7 @@ export default function Navbar() {
             <User className="h-4 w-4" />
             <span>{user.name}</span>
             <span className="text-xs bg-cyan-300/15 text-cyan-200 px-2 py-0.5 rounded-full border border-cyan-300/30">
-              {roleLabel(language, user.role)}
+              {roleLabel(language, user.role as MemberRole)}
             </span>
           </div>
         )}

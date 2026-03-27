@@ -42,7 +42,7 @@ export default function MemoryChart({ timeRange: _timeRange, data = [] }: Memory
                 y={MEMORY_LIMIT_MB}
                 stroke="#ef4444"
                 strokeDasharray="5 3"
-                label={{ value: t(language, "monitoring.limitMb", { value: MEMORY_LIMIT_MB }), position: "insideTopRight", fontSize: 10, fill: "#ef4444" }}
+                label={{ value: t(language, "monitoring.limitMb", { value: String(MEMORY_LIMIT_MB) }), position: "insideTopRight", fontSize: 10, fill: "#ef4444" }}
               />
               <Line type="monotone" dataKey="memoryMb" name={t(language, "monitoring.memory")} stroke="#10b981" strokeWidth={2} dot={false} />
             </LineChart>

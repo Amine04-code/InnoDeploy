@@ -283,7 +283,10 @@ export default function ProjectDetailPage() {
         const alerts = (alertsRes.data?.alerts || []) as ProjectAlert[];
         setMonitoringAlerts(
           alerts
-            .filter((alert) => alert.projectId === _projectId)
+            .filter((alert) => {
+              const alertProjectId = (alert as { projectId?: string }).projectId;
+              return alertProjectId === _projectId || alert.project === projectData.name;
+            })
             .map((alert) => ({
               id: alert.id,
               severity: alert.severity,

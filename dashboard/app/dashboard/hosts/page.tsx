@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import Sidebar from "@/components/shared/Sidebar";
 import Navbar from "@/components/shared/Navbar";
@@ -16,6 +17,7 @@ import type { Host, HostFormData } from "@/types";
 export default function HostsPage() {
   const language = useLanguagePreference();
   const isReady = useRequireAuth();
+  const searchParams = useSearchParams();
   const [hosts, setHosts] = useState<Host[]>([]);
   const [requestedHostId, setRequestedHostId] = useState<string | null>(null);
   const [selectedHostId, setSelectedHostId] = useState<string | null>(null);
@@ -54,6 +56,13 @@ export default function HostsPage() {
     const nextHostId = new URLSearchParams(window.location.search).get("hostId");
     setRequestedHostId(nextHostId);
   }, []);
+
+  useEffect(() => {
+    if (!isReady) return;
+    if (searchParams.get("add") === "1") {
+      setModalOpen(true);
+    }
+  }, [isReady, searchParams]);
 
   useEffect(() => {
     if (!requestedHostId || hosts.length === 0) {

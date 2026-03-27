@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import Sidebar from "@/components/shared/Sidebar";
 import Navbar from "@/components/shared/Navbar";
@@ -18,6 +19,7 @@ import type { Project, ProjectStatus } from "@/types";
 export default function ProjectsPage() {
   const language = useLanguagePreference();
   const isReady = useRequireAuth();
+  const searchParams = useSearchParams();
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<ProjectStatus | "all">("all");
@@ -38,6 +40,13 @@ export default function ProjectsPage() {
 
     void loadProjects();
   }, [isReady]);
+
+  useEffect(() => {
+    if (!isReady) return;
+    if (searchParams.get("new") === "1") {
+      setModalOpen(true);
+    }
+  }, [isReady, searchParams]);
 
   const filteredProjects = useMemo(() => {
     return projects.filter((p) => {

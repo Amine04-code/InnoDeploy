@@ -360,7 +360,7 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
                       <ShieldCheck className="h-5 w-5 text-primary" />
                       <div>
-                        <div className="font-medium capitalize">{t(language, "accessPosture.yourRole", { role: user?.role ? roleLabel(language, user.role) : "unknown" })}</div>
+                        <div className="font-medium capitalize">{t(language, "accessPosture.yourRole", { role: user?.role ? roleLabel(language, user.role as MemberRole) : "unknown" })}</div>
                         <div className="text-muted-foreground">{t(language, "accessPosture.hint")}</div>
                       </div>
                     </div>
