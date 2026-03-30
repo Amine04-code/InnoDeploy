@@ -1,12 +1,17 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { t } from "@/lib/settingsI18n";
 import { cn } from "@/lib/utils";
+import { alertApi } from "@/lib/apiClient";
+import type { ProjectAlert } from "@/types";
 
 type Severity = "critical" | "warning" | "info";
 
@@ -17,14 +22,6 @@ interface Alert {
   time: string;
 }
 
-const mockAlerts: Alert[] = [
-  { id: "1", message: "notifications service is unreachable", severity: "critical", time: "3 min ago" },
-  { id: "2", message: "worker response time > 2 s", severity: "warning", time: "18 min ago" },
-  { id: "3", message: "Deployment #84 completed for web-app", severity: "info", time: "1 hr ago" },
-  { id: "4", message: "Disk usage above 80% on host prod-02", severity: "warning", time: "2 hr ago" },
-  { id: "5", message: "Certificate expiring in 7 days for api.example.com", severity: "info", time: "5 hr ago" },
-];
-
 const severityStyles: Record<Severity, string> = {
   critical: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   warning: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
@@ -32,14 +29,48 @@ const severityStyles: Record<Severity, string> = {
 };
 
 export default function AlertsFeed() {
+  const language = useLanguagePreference();
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+
+  useEffect(() => {
+    const formatRelative = (isoDate: string) => {
+      const deltaSeconds = Math.max(0, Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000));
+      if (deltaSeconds < 60) return `${deltaSeconds}s ago`;
+      if (deltaSeconds < 3600) return `${Math.floor(deltaSeconds / 60)}m ago`;
+      if (deltaSeconds < 86400) return `${Math.floor(deltaSeconds / 3600)}h ago`;
+      return `${Math.floor(deltaSeconds / 86400)}d ago`;
+    };
+
+    const load = async () => {
+      try {
+        const { data } = await alertApi.getAlerts();
+        const mapped = ((data?.alerts || []) as ProjectAlert[])
+          .slice(0, 5)
+          .map((item) => ({
+            id: item.id,
+            message: item.message,
+            severity: item.severity,
+            time: formatRelative(item.timestamp),
+          }));
+
+        setAlerts(mapped);
+      } catch {
+        setAlerts([]);
+      }
+    };
+
+    void load();
+  }, []);
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Alerts</CardTitle>
+        <CardTitle className="text-lg">{t(language, "alerts.title")}</CardTitle>
       </CardHeader>
       <CardContent>
         <ul className="space-y-3">
-          {mockAlerts.map((alert) => (
+          {alerts.length === 0 && <li className="text-sm text-muted-foreground">{t(language, "alerts.none")}</li>}
+          {alerts.map((alert) => (
             <li key={alert.id} className="flex items-start gap-3 text-sm">
               <span
                 className={cn(

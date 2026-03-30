@@ -1,6 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { t } from "@/lib/settingsI18n";
 
 const tabs = ["Overview", "Pipelines", "Monitoring", "Logs", "Settings"] as const;
 export type SubNavTab = (typeof tabs)[number];
@@ -11,6 +13,16 @@ interface SubNavTabsProps {
 }
 
 export default function SubNavTabs({ active, onChange }: SubNavTabsProps) {
+  const language = useLanguagePreference();
+
+  const labelByTab: Record<SubNavTab, string> = {
+    Overview: t(language, "nav.overview"),
+    Pipelines: t(language, "nav.pipelines"),
+    Monitoring: t(language, "nav.monitoring"),
+    Logs: t(language, "nav.logs"),
+    Settings: t(language, "nav.settings"),
+  };
+
   return (
     <div className="border-b">
       <nav className="flex gap-4 -mb-px">
@@ -25,7 +37,7 @@ export default function SubNavTabs({ active, onChange }: SubNavTabsProps) {
                 : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
             )}
           >
-            {tab}
+            {labelByTab[tab]}
           </button>
         ))}
       </nav>

@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { GitBranch, Clock, Layers } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { localeFromLanguage, projectStatusLabel, t } from "@/lib/settingsI18n";
 import { cn } from "@/lib/utils";
 import type { Project, ProjectStatus } from "@/types";
 
-const statusConfig: Record<ProjectStatus, { label: string; className: string }> = {
-  running: { label: "Running", className: "bg-green-500/10 text-green-600 border-green-500/30" },
-  stopped: { label: "Stopped", className: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30" },
-  failed: { label: "Failed", className: "bg-red-500/10 text-red-600 border-red-500/30" },
+const statusConfig: Record<ProjectStatus, { className: string }> = {
+  running: { className: "bg-green-500/10 text-green-600 border-green-500/30" },
+  stopped: { className: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30" },
+  failed: { className: "bg-red-500/10 text-red-600 border-red-500/30" },
 };
 
 interface ProjectCardProps {
@@ -17,11 +19,12 @@ interface ProjectCardProps {
 }
 
 export default function ProjectCard({ project }: ProjectCardProps) {
+  const language = useLanguagePreference();
   const status = statusConfig[project.status];
 
   const lastDeploy = project.lastDeployAt
-    ? new Date(project.lastDeployAt).toLocaleString()
-    : "Never";
+    ? new Date(project.lastDeployAt).toLocaleString(localeFromLanguage(language))
+    : t(language, "projects.never");
 
   return (
     <Link href={`/dashboard/projects/${project.id}`}>
@@ -34,7 +37,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             status.className
           )}
         >
-          {status.label}
+          {projectStatusLabel(language, project.status)}
         </span>
       </CardHeader>
 

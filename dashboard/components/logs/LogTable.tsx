@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { localeFromLanguage, logLevelLabel, t } from "@/lib/settingsI18n";
 import type { LogEntry, LogLevel } from "@/types";
 
 const levelStyle: Record<LogLevel, string> = {
@@ -43,7 +45,18 @@ function highlightText(text: string, pattern: string, isRegex: boolean): React.R
   }
 }
 
-function LogRow({ entry, searchQuery, isRegex }: { entry: LogEntry; searchQuery: string; isRegex: boolean }) {
+function LogRow({
+  entry,
+  searchQuery,
+  isRegex,
+  locale,
+}: {
+  entry: LogEntry;
+  searchQuery: string;
+  isRegex: boolean;
+  locale: string;
+}) {
+  const language = useLanguagePreference();
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -62,11 +75,11 @@ function LogRow({ entry, searchQuery, isRegex }: { entry: LogEntry; searchQuery:
           }
         </td>
         <td className="py-2 text-xs text-muted-foreground whitespace-nowrap font-mono">
-          {new Date(entry.timestamp).toLocaleString()}
+          {new Date(entry.timestamp).toLocaleString(locale)}
         </td>
         <td className="py-2 px-2">
           <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", levelStyle[entry.level])}>
-            {entry.level}
+            {logLevelLabel(language, entry.level)}
           </span>
         </td>
         <td className="py-2 px-2 font-mono text-xs text-muted-foreground whitespace-nowrap">{entry.container}</td>
@@ -79,19 +92,19 @@ function LogRow({ entry, searchQuery, isRegex }: { entry: LogEntry; searchQuery:
           <td colSpan={5} className="px-6 py-3">
             <div className="space-y-1 text-xs">
               <div className="flex gap-2">
-                <span className="text-muted-foreground w-20 flex-shrink-0">Timestamp</span>
+                <span className="text-muted-foreground w-20 flex-shrink-0">{t(language, "logs.timestamp")}</span>
                 <span className="font-mono">{entry.timestamp}</span>
               </div>
               <div className="flex gap-2">
-                <span className="text-muted-foreground w-20 flex-shrink-0">Container</span>
+                <span className="text-muted-foreground w-20 flex-shrink-0">{t(language, "logs.container")}</span>
                 <span className="font-mono">{entry.container}</span>
               </div>
               <div className="flex gap-2">
-                <span className="text-muted-foreground w-20 flex-shrink-0">Level</span>
-                <span className="uppercase font-semibold">{entry.level}</span>
+                <span className="text-muted-foreground w-20 flex-shrink-0">{t(language, "logs.level")}</span>
+                <span className="uppercase font-semibold">{logLevelLabel(language, entry.level)}</span>
               </div>
               <div className="flex gap-2">
-                <span className="text-muted-foreground w-20 flex-shrink-0">Message</span>
+                <span className="text-muted-foreground w-20 flex-shrink-0">{t(language, "logs.message")}</span>
                 <span className="font-mono break-all whitespace-pre-wrap">{entry.message}</span>
               </div>
             </div>
@@ -103,32 +116,35 @@ function LogRow({ entry, searchQuery, isRegex }: { entry: LogEntry; searchQuery:
 }
 
 export default function LogTable({ entries, searchQuery, isRegex }: LogTableProps) {
+  const language = useLanguagePreference();
+  const locale = localeFromLanguage(language);
+
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Log Table</CardTitle>
+        <CardTitle className="text-base">{t(language, "logs.tableTitle")}</CardTitle>
       </CardHeader>
       <CardContent className="overflow-x-auto p-0">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-muted-foreground">
               <th className="pb-2 pl-2 w-5" />
-              <th className="pb-2 font-medium whitespace-nowrap px-1">Timestamp</th>
-              <th className="pb-2 font-medium px-2">Level</th>
-              <th className="pb-2 font-medium px-2">Container</th>
-              <th className="pb-2 font-medium pr-3">Message</th>
+              <th className="pb-2 font-medium whitespace-nowrap px-1">{t(language, "logs.timestamp")}</th>
+              <th className="pb-2 font-medium px-2">{t(language, "logs.level")}</th>
+              <th className="pb-2 font-medium px-2">{t(language, "logs.container")}</th>
+              <th className="pb-2 font-medium pr-3">{t(language, "logs.message")}</th>
             </tr>
           </thead>
           <tbody>
             {entries.length === 0 ? (
               <tr>
                 <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                  No log entries match the current filters.
+                  {t(language, "logs.noEntries")}
                 </td>
               </tr>
             ) : (
               entries.map((entry) => (
-                <LogRow key={entry.id} entry={entry} searchQuery={searchQuery} isRegex={isRegex} />
+                <LogRow key={entry.id} entry={entry} searchQuery={searchQuery} isRegex={isRegex} locale={locale} />
               ))
             )}
           </tbody>

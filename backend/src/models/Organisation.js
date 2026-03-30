@@ -42,19 +42,31 @@ const organisationSchema = new mongoose.Schema(
     alertRules: {
       cpuThreshold: {
         type: Number,
-        default: 80,
+        default: 90,
       },
       memoryThreshold: {
         type: Number,
-        default: 85,
+        default: 95,
       },
       latencyThreshold: {
         type: Number,
-        default: 250,
+        default: 2000,
       },
       availabilityThreshold: {
         type: Number,
         default: 99,
+      },
+      serviceDownFailures: {
+        type: Number,
+        default: 5,
+      },
+      diskThreshold: {
+        type: Number,
+        default: 85,
+      },
+      certExpiryDays: {
+        type: Number,
+        default: 14,
       },
       emailNotifications: {
         type: Boolean,
@@ -83,6 +95,26 @@ const organisationSchema = new mongoose.Schema(
       },
     },
     notificationChannels: {
+      emailEnabled: {
+        type: Boolean,
+        default: true,
+      },
+      slackEnabled: {
+        type: Boolean,
+        default: false,
+      },
+      discordEnabled: {
+        type: Boolean,
+        default: false,
+      },
+      expoEnabled: {
+        type: Boolean,
+        default: false,
+      },
+      webhookEnabled: {
+        type: Boolean,
+        default: false,
+      },
       slackWebhook: {
         type: String,
         default: "",
@@ -116,6 +148,29 @@ const organisationSchema = new mongoose.Schema(
         type: String,
         default: "",
         trim: true,
+      },
+      emailRecipients: {
+        type: [String],
+        default: [],
+      },
+      expoAccessToken: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+      expoPushTokens: {
+        type: [String],
+        default: [],
+      },
+      webhookUrl: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+      webhookHeaders: {
+        type: Map,
+        of: String,
+        default: {},
       },
     },
     dockerRegistry: {

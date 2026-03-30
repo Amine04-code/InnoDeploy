@@ -2,12 +2,14 @@
 
 import { ExternalLink, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { localeFromLanguage, projectStatusLabel, t } from "@/lib/settingsI18n";
 import type { ProjectDetail, ProjectStatus } from "@/types";
 
 const statusConfig: Record<ProjectStatus, { label: string; className: string }> = {
-  running: { label: "Running", className: "bg-green-500/10 text-green-600 border-green-500/30" },
-  stopped: { label: "Stopped", className: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30" },
-  failed: { label: "Failed", className: "bg-red-500/10 text-red-600 border-red-500/30" },
+  running: { label: "running", className: "bg-green-500/10 text-green-600 border-green-500/30" },
+  stopped: { label: "stopped", className: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30" },
+  failed: { label: "failed", className: "bg-red-500/10 text-red-600 border-red-500/30" },
 };
 
 interface ProjectHeaderProps {
@@ -15,10 +17,12 @@ interface ProjectHeaderProps {
 }
 
 export default function ProjectHeader({ project }: ProjectHeaderProps) {
+  const language = useLanguagePreference();
+  const locale = localeFromLanguage(language);
   const status = statusConfig[project.status];
   const lastDeploy = project.lastDeployAt
-    ? new Date(project.lastDeployAt).toLocaleString()
-    : "Never deployed";
+    ? new Date(project.lastDeployAt).toLocaleString(locale)
+    : t(language, "projectHeader.neverDeployed");
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -31,7 +35,7 @@ export default function ProjectHeader({ project }: ProjectHeaderProps) {
               status.className
             )}
           >
-            {status.label}
+            {projectStatusLabel(language, status.label as ProjectStatus)}
           </span>
         </div>
 
@@ -47,7 +51,7 @@ export default function ProjectHeader({ project }: ProjectHeaderProps) {
           </a>
           <span className="flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" />
-            Last deploy: {lastDeploy}
+            {t(language, "projectHeader.lastDeploy", { value: lastDeploy })}
           </span>
         </div>
       </div>

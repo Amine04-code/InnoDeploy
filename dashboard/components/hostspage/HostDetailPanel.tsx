@@ -2,6 +2,8 @@
 
 import { HardDrive, MemoryStick, MonitorCog, Server } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { t } from "@/lib/settingsI18n";
 import { cn } from "@/lib/utils";
 import TestConnectionButton from "./TestConnectionButton";
 import RemoveHostButton from "./RemoveHostButton";
@@ -28,6 +30,7 @@ function Gauge({ label, value, tone }: { label: string; value: number; tone: str
 }
 
 export default function HostDetailPanel({ host, onTest, onRemove }: HostDetailPanelProps) {
+  const language = useLanguagePreference();
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -42,14 +45,14 @@ export default function HostDetailPanel({ host, onTest, onRemove }: HostDetailPa
           </div>
         </div>
         {host.activeDeployments > 0 && (
-          <p className="text-xs text-amber-600">Removal is blocked while {host.activeDeployments} active deployment{host.activeDeployments > 1 ? "s are" : " is"} assigned to this host.</p>
+          <p className="text-xs text-amber-600">{t(language, "hosts.removeBlocked", { count: String(host.activeDeployments), suffix: host.activeDeployments > 1 ? "s" : "" })}</p>
         )}
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="grid gap-4 md:grid-cols-3">
           <Gauge label="CPU" value={host.cpu} tone="bg-blue-500" />
-          <Gauge label="Memory" value={host.memory} tone="bg-emerald-500" />
-          <Gauge label="Disk" value={host.disk} tone="bg-amber-500" />
+          <Gauge label={t(language, "hosts.memory")} value={host.memory} tone="bg-emerald-500" />
+          <Gauge label={t(language, "hosts.disk")} value={host.disk} tone="bg-amber-500" />
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
@@ -62,7 +65,7 @@ export default function HostDetailPanel({ host, onTest, onRemove }: HostDetailPa
             <p className="mt-2 text-sm text-muted-foreground">{host.dockerVersion}</p>
           </div>
           <div className="rounded-lg border p-4">
-            <div className="flex items-center gap-2 text-sm font-medium"><MemoryStick className="h-4 w-4 text-muted-foreground" /> Active Deployments</div>
+            <div className="flex items-center gap-2 text-sm font-medium"><MemoryStick className="h-4 w-4 text-muted-foreground" /> {t(language, "hosts.activeDeployments")}</div>
             <p className="mt-2 text-sm text-muted-foreground">{host.activeDeployments}</p>
           </div>
         </div>
@@ -70,7 +73,7 @@ export default function HostDetailPanel({ host, onTest, onRemove }: HostDetailPa
         <div>
           <div className="mb-3 flex items-center gap-2 text-sm font-medium">
             <HardDrive className="h-4 w-4 text-muted-foreground" />
-            Deployed Containers
+            {t(language, "hosts.deployedContainers")}
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             {host.containers.map((container) => (

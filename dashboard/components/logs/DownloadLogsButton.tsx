@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Download, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { t } from "@/lib/settingsI18n";
 import type { LogEntry } from "@/types";
 
 type ExportFormat = "json" | "text";
@@ -13,6 +15,7 @@ interface DownloadLogsButtonProps {
 
 export default function DownloadLogsButton({ entries }: DownloadLogsButtonProps) {
   const [open, setOpen] = useState(false);
+  const language = useLanguagePreference();
 
   const download = (format: ExportFormat) => {
     setOpen(false);
@@ -45,7 +48,7 @@ export default function DownloadLogsButton({ entries }: DownloadLogsButtonProps)
     <div className="relative">
       <Button variant="outline" size="sm" onClick={() => setOpen((v) => !v)}>
         <Download className="h-3.5 w-3.5 mr-1.5" />
-        Export
+        {t(language, "logs.export")}
         <ChevronDown className="h-3.5 w-3.5 ml-1.5" />
       </Button>
 
@@ -58,13 +61,13 @@ export default function DownloadLogsButton({ entries }: DownloadLogsButtonProps)
               onClick={() => download("json")}
               className="w-full text-left px-4 py-2 text-sm hover:bg-muted transition-colors"
             >
-              Export as JSON
+              {t(language, "logs.exportJson")}
             </button>
             <button
               onClick={() => download("text")}
               className="w-full text-left px-4 py-2 text-sm hover:bg-muted transition-colors"
             >
-              Export as Plain Text
+              {t(language, "logs.exportText")}
             </button>
           </div>
         </>

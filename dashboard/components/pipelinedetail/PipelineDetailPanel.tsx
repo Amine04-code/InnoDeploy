@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Check, X, Loader2, Clock, ChevronRight } from "lucide-react";
+import { Check, X, Loader2, Clock, ChevronRight, CircleDot } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { t } from "@/lib/settingsI18n";
 import StageLogViewer from "./StageLogViewer";
 import CancelRunButton from "./CancelRunButton";
 import RetryButton from "./RetryButton";
@@ -39,10 +41,28 @@ interface PipelineDetailPanelProps {
   run: PipelineRun;
   onCancel: (runId: string) => Promise<void>;
   onRetry: (runId: string) => Promise<void>;
+  streamState?: "idle" | "connecting" | "live" | "reconnecting" | "offline";
 }
 
-export default function PipelineDetailPanel({ run, onCancel, onRetry }: PipelineDetailPanelProps) {
+const streamStatusConfig: Record<NonNullable<PipelineDetailPanelProps["streamState"]>, { label: string; className: string }> = {
+  idle: { label: "Idle", className: "border-border bg-muted/40 text-muted-foreground" },
+  connecting: { label: "Connecting", className: "border-blue-300/30 bg-blue-100/50 text-blue-700" },
+  live: { label: "Live", className: "border-emerald-300/30 bg-emerald-100/50 text-emerald-700" },
+  reconnecting: { label: "Reconnecting", className: "border-amber-300/30 bg-amber-100/50 text-amber-700" },
+  offline: { label: "Offline", className: "border-red-300/30 bg-red-100/50 text-red-700" },
+};
+
+export default function PipelineDetailPanel({ run, onCancel, onRetry, streamState = "idle" }: PipelineDetailPanelProps) {
+  const language = useLanguagePreference();
   const [selectedStageId, setSelectedStageId] = useState<string>(run.stages[0]?.id ?? "");
+  const streamStatus = streamStatusConfig[streamState];
+  const streamLabelByState: Record<NonNullable<PipelineDetailPanelProps["streamState"]>, string> = {
+    idle: t(language, "pipeline.stream.idle"),
+    connecting: t(language, "pipeline.stream.connecting"),
+    live: t(language, "pipeline.stream.live"),
+    reconnecting: t(language, "pipeline.stream.reconnecting"),
+    offline: t(language, "pipeline.stream.offline"),
+  };
 
   // Reset selected stage when a different run is opened
   useEffect(() => {
@@ -60,12 +80,18 @@ export default function PipelineDetailPanel({ run, onCancel, onRetry }: Pipeline
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <CardTitle className="text-base">
-            Run <span className="font-mono text-primary">#{run.id}</span>
-            <span className="text-muted-foreground font-normal ml-2 text-sm">
-              {run.branch} · {run.commit.slice(0, 7)}
+          <div className="flex items-center gap-2 flex-wrap">
+            <CardTitle className="text-base">
+              Run <span className="font-mono text-primary">#{run.id}</span>
+              <span className="text-muted-foreground font-normal ml-2 text-sm">
+                {run.branch} · {run.commit.slice(0, 7)}
+              </span>
+            </CardTitle>
+            <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium", streamStatus.className)}>
+              <CircleDot className={cn("h-3 w-3", streamState === "live" ? "animate-pulse" : "")} />
+              {streamLabelByState[streamState]}
             </span>
-          </CardTitle>
+          </div>
           <div className="flex gap-2">
             {run.status === "running" && (
               <CancelRunButton runId={run.id} onCancel={onCancel} />
@@ -110,7 +136,7 @@ export default function PipelineDetailPanel({ run, onCancel, onRetry }: Pipeline
         {totalSeconds > 0 && (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-              Stage Duration
+              {t(language, "pipeline.stageDuration")}
             </p>
             <div className="space-y-1.5">
               {run.stages.map((stage) => {
@@ -138,7 +164,7 @@ export default function PipelineDetailPanel({ run, onCancel, onRetry }: Pipeline
         {/* Log viewer */}
         <div>
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-2">
-            Stage Logs
+            {t(language, "pipeline.stageLogs")}
           </p>
           <StageLogViewer stage={selectedStage} />
         </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { roleLabel } from "@/lib/settingsI18n";
 import type { MemberRole } from "@/types";
 
 interface RoleEditorProps {
@@ -11,6 +13,8 @@ interface RoleEditorProps {
 const roles: MemberRole[] = ["owner", "admin", "developer", "viewer"];
 
 export default function RoleEditor({ value, disabled, onChange }: RoleEditorProps) {
+  const language = useLanguagePreference();
+
   return (
     <select
       value={value}
@@ -20,7 +24,7 @@ export default function RoleEditor({ value, disabled, onChange }: RoleEditorProp
     >
       {roles.map((role) => (
         <option key={role} value={role}>
-          {role}
+          {roleLabel(language, role)}
         </option>
       ))}
     </select>

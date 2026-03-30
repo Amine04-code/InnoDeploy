@@ -1,0 +1,57 @@
+name: my-app-pipeline
+trigger:
+  branch: main
+  events: [push, tag]
+
+strategy: rolling
+environment: production
+
+stages:
+  - name: install
+    image: node:20-alpine
+    commands:
+      - npm ci
+
+  - name: lint
+    image: node:20-alpine
+    commands:
+      - npm run lint
+
+  - name: test
+    image: node:20-alpine
+    commands:
+      - npm run test -- --coverage
+    artifacts:
+      - coverage/
+
+  - name: build
+    image: node:20-alpine
+    commands:
+      - npm run build
+    artifacts:
+      - dist/
+
+  - name: docker-build
+    image: docker:25-dind
+    commands:
+      - docker build -t $IMAGE_TAG .
+      - docker push $IMAGE_TAG
+
+  - name: deploy
+    strategy: rolling
+    environment: production
+    commands:
+      - kubectl apply -f deployment.yml
+
+health_check:
+  path: /health
+  interval: 10s
+  retries: 3
+
+notifications:
+  on_success:
+    - slack: "#deployments"
+    - email: team@innovibe.tn
+  on_failure:
+    - slack: "#alerts"
+    - email: team@innovibe.tn

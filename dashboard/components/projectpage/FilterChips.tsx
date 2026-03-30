@@ -1,13 +1,15 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { projectStatusLabel, t } from "@/lib/settingsI18n";
 import type { ProjectStatus } from "@/types";
 
-const filters: { label: string; value: ProjectStatus | "all" }[] = [
-  { label: "All", value: "all" },
-  { label: "Running", value: "running" },
-  { label: "Stopped", value: "stopped" },
-  { label: "Failed", value: "failed" },
+const filters: { value: ProjectStatus | "all" }[] = [
+  { value: "all" },
+  { value: "running" },
+  { value: "stopped" },
+  { value: "failed" },
 ];
 
 interface FilterChipsProps {
@@ -16,9 +18,11 @@ interface FilterChipsProps {
 }
 
 export default function FilterChips({ active, onChange }: FilterChipsProps) {
+  const language = useLanguagePreference();
+
   return (
     <div className="flex flex-wrap gap-2">
-      {filters.map(({ label, value }) => (
+      {filters.map(({ value }) => (
         <button
           key={value}
           onClick={() => onChange(value)}
@@ -29,7 +33,7 @@ export default function FilterChips({ active, onChange }: FilterChipsProps) {
               : "bg-background text-muted-foreground border-input hover:bg-accent hover:text-accent-foreground"
           )}
         >
-          {label}
+          {value === "all" ? t(language, "projects.all") : projectStatusLabel(language, value)}
         </button>
       ))}
     </div>

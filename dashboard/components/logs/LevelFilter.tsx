@@ -1,6 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { logLevelLabel } from "@/lib/settingsI18n";
 import type { LogLevel } from "@/types";
 
 const LEVELS: { value: LogLevel; label: string; activeClass: string }[] = [
@@ -17,6 +19,7 @@ interface LevelFilterProps {
 }
 
 export default function LevelFilter({ selected, onChange }: LevelFilterProps) {
+  const language = useLanguagePreference();
   const toggle = (level: LogLevel) => {
     const next = new Set(selected);
     if (next.has(level)) {
@@ -29,7 +32,7 @@ export default function LevelFilter({ selected, onChange }: LevelFilterProps) {
 
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
-      {LEVELS.map(({ value, label, activeClass }) => (
+      {LEVELS.map(({ value, activeClass }) => (
         <button
           key={value}
           onClick={() => toggle(value)}
@@ -40,7 +43,7 @@ export default function LevelFilter({ selected, onChange }: LevelFilterProps) {
               : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
           )}
         >
-          {label}
+          {logLevelLabel(language, value)}
         </button>
       ))}
     </div>

@@ -3,6 +3,8 @@
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { alertRuleLabel, localeFromLanguage, t } from "@/lib/settingsI18n";
 import AcknowledgeButton from "./AcknowledgeButton";
 import type { ProjectAlert } from "@/types";
 
@@ -14,6 +16,7 @@ interface AlertDetailDrawerProps {
 }
 
 export default function AlertDetailDrawer({ alert, open, onClose, onAcknowledge }: AlertDetailDrawerProps) {
+  const language = useLanguagePreference();
   if (!open || !alert) return null;
 
   const chartData = Array.from({ length: 12 }, (_, index) => ({
@@ -26,8 +29,8 @@ export default function AlertDetailDrawer({ alert, open, onClose, onAcknowledge 
       <div className="flex min-h-full w-full flex-col">
         <div className="flex items-start justify-between border-b px-6 py-4">
           <div>
-            <h2 className="text-lg font-semibold">Alert Detail</h2>
-            <p className="text-sm text-muted-foreground">{alert.project} · {alert.ruleType} · {new Date(alert.timestamp).toLocaleString()}</p>
+            <h2 className="text-lg font-semibold">{t(language, "alerts.detailTitle")}</h2>
+            <p className="text-sm text-muted-foreground">{alert.project} · {alertRuleLabel(language, alert.ruleType)} · {new Date(alert.timestamp).toLocaleString(localeFromLanguage(language))}</p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose}><X className="h-4 w-4" /></Button>
         </div>
@@ -48,7 +51,7 @@ export default function AlertDetailDrawer({ alert, open, onClose, onAcknowledge 
           </div>
 
           <div className="rounded-lg border p-4">
-            <p className="mb-3 text-sm font-medium">Metric At Trigger</p>
+            <p className="mb-3 text-sm font-medium">{t(language, "alerts.metricAtTrigger")}</p>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
@@ -63,7 +66,7 @@ export default function AlertDetailDrawer({ alert, open, onClose, onAcknowledge 
         </div>
 
         <div className="flex items-center justify-between border-t px-6 py-4">
-          <p className="text-sm text-muted-foreground capitalize">Status: {alert.status}</p>
+          <p className="text-sm text-muted-foreground capitalize">{t(language, "alerts.statusPrefix", { status: alert.status })}</p>
           <AcknowledgeButton alertId={alert.id} disabled={alert.status !== "open"} onAcknowledge={onAcknowledge} />
         </div>
       </div>

@@ -5,6 +5,8 @@ import { UserPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { roleLabel, t } from "@/lib/settingsI18n";
 import type { MemberRole } from "@/types";
 
 interface InviteMemberButtonProps {
@@ -16,6 +18,7 @@ interface InviteMemberButtonProps {
 const roles: MemberRole[] = ["admin", "developer", "viewer"];
 
 export default function InviteMemberButton({ disabled, loading, onInvite }: InviteMemberButtonProps) {
+  const language = useLanguagePreference();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<MemberRole>("developer");
@@ -31,17 +34,17 @@ export default function InviteMemberButton({ disabled, loading, onInvite }: Invi
     <div className="space-y-3">
       <Button variant="outline" onClick={() => setOpen((current) => !current)} disabled={disabled}>
         {open ? <X className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
-        {open ? "Close invite" : "Invite member"}
+        {open ? t(language, "members.closeInvite") : t(language, "members.inviteMember")}
       </Button>
 
       {open && (
         <div className="grid gap-3 rounded-lg border bg-muted/30 p-4 md:grid-cols-[1.5fr_180px_auto] md:items-end">
           <div className="space-y-2">
-            <Label htmlFor="invite-email">Email</Label>
+            <Label htmlFor="invite-email">{t(language, "members.email")}</Label>
             <Input id="invite-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="invite-role">Role</Label>
+            <Label htmlFor="invite-role">{t(language, "members.role")}</Label>
             <select
               id="invite-role"
               value={role}
@@ -50,13 +53,13 @@ export default function InviteMemberButton({ disabled, loading, onInvite }: Invi
             >
               {roles.map((option) => (
                 <option key={option} value={option}>
-                  {option}
+                  {roleLabel(language, option)}
                 </option>
               ))}
             </select>
           </div>
           <Button onClick={() => void handleSubmit()} disabled={loading || !email.trim()}>
-            {loading ? "Inviting..." : "Send invite"}
+            {loading ? t(language, "members.inviting") : t(language, "members.sendInvite")}
           </Button>
         </div>
       )}

@@ -10,13 +10,18 @@ import AlertRulesConfig from "@/components/alertspage/AlertRulesConfig";
 import AlertsTable from "@/components/alertspage/AlertsTable";
 import NotificationTestButton from "@/components/alertspage/NotificationTestButton";
 import { alertApi } from "@/lib/apiClient";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { localeFromLanguage, t } from "@/lib/settingsI18n";
 import type { AlertRuleConfig, ProjectAlert } from "@/types";
 
 const initialRules: AlertRuleConfig = {
-  cpuThreshold: 80,
-  memoryThreshold: 85,
-  latencyThreshold: 250,
+  cpuThreshold: 90,
+  memoryThreshold: 95,
+  latencyThreshold: 2000,
   availabilityThreshold: 99,
+  serviceDownFailures: 5,
+  diskThreshold: 85,
+  certExpiryDays: 14,
   emailNotifications: true,
   slackNotifications: true,
 };
@@ -33,6 +38,7 @@ export default function AlertsPage() {
   const [rules, setRules] = useState<AlertRuleConfig>(initialRules);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const language = useLanguagePreference();
 
   useEffect(() => {
     if (!isReady) return;
@@ -44,10 +50,10 @@ export default function AlertsPage() {
         const { data } = await alertApi.getAlerts();
         setAlerts(data.alerts as ProjectAlert[]);
         if (data.rules) {
-          setRules(data.rules as AlertRuleConfig);
+          setRules({ ...initialRules, ...(data.rules as Partial<AlertRuleConfig>) });
         }
       } catch (loadError: unknown) {
-        setError(loadError instanceof Error ? loadError.message : "Failed to load alerts");
+        setError(loadError instanceof Error ? loadError.message : t(language, "alerts.pageTitle"));
       } finally {
         setLoading(false);
       }
@@ -85,7 +91,8 @@ export default function AlertsPage() {
   const handleNotificationTest = async () => {
     const { data } = await alertApi.testNotification();
     if (typeof window !== "undefined") {
-      window.alert(`Notification test sent at ${new Date(data.sentAt as string).toLocaleString()}`);
+        const formatted = new Date(data.sentAt as string).toLocaleString(localeFromLanguage(language));
+        window.alert(t(language, "alerts.notificationSentAt", { time: formatted }));
     }
   };
 
@@ -94,7 +101,7 @@ export default function AlertsPage() {
     try {
       await alertApi.updateRules(nextRules);
     } catch (saveError: unknown) {
-      setError(saveError instanceof Error ? saveError.message : "Failed to save alert rules");
+      setError(saveError instanceof Error ? saveError.message : t(language, "alerts.rulesTitle"));
     }
   };
 
@@ -106,8 +113,8 @@ export default function AlertsPage() {
         <main className="flex-1 space-y-6 p-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Alerts</h1>
-              <p className="text-sm text-muted-foreground">Review triggered alerts, acknowledge incidents, and tune notification thresholds.</p>
+              <h1 className="text-2xl font-semibold tracking-tight">{t(language, "alerts.pageTitle")}</h1>
+              <p className="text-sm text-muted-foreground">{t(language, "alerts.pageSubtitle")}</p>
             </div>
             <NotificationTestButton onTest={handleNotificationTest} />
           </div>
@@ -134,7 +141,7 @@ export default function AlertsPage() {
 
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
             {loading ? (
-              <div className="rounded-xl border bg-card px-4 py-10 text-center text-sm text-muted-foreground">Loading alerts...</div>
+              <div className="rounded-xl border bg-card px-4 py-10 text-center text-sm text-muted-foreground">{t(language, "alerts.loading")}</div>
             ) : (
               <AlertsTable
                 alerts={filteredAlerts}

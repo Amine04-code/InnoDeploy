@@ -2,6 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { localeFromLanguage, t } from "@/lib/settingsI18n";
 import type { Deployment } from "@/types";
 
 const statusStyle: Record<Deployment["status"], string> = {
@@ -15,28 +17,31 @@ interface RecentDeploysTableProps {
 }
 
 export default function RecentDeploysTable({ deployments }: RecentDeploysTableProps) {
+  const language = useLanguagePreference();
+  const locale = localeFromLanguage(language);
+
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Recent Deployments</CardTitle>
+        <CardTitle className="text-base">{t(language, "projectDetail.recentDeployments")}</CardTitle>
       </CardHeader>
       <CardContent className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-muted-foreground">
-              <th className="pb-2 font-medium">Version</th>
-              <th className="pb-2 font-medium">Strategy</th>
-              <th className="pb-2 font-medium">Duration</th>
-              <th className="pb-2 font-medium">Triggered by</th>
-              <th className="pb-2 font-medium">Status</th>
-              <th className="pb-2 font-medium">Date</th>
+              <th className="pb-2 font-medium">{t(language, "projects.version")}</th>
+              <th className="pb-2 font-medium">{t(language, "projects.strategy")}</th>
+              <th className="pb-2 font-medium">{t(language, "projects.duration")}</th>
+              <th className="pb-2 font-medium">{t(language, "projectDetail.triggeredBy")}</th>
+              <th className="pb-2 font-medium">{t(language, "projects.status")}</th>
+              <th className="pb-2 font-medium">{t(language, "table.date")}</th>
             </tr>
           </thead>
           <tbody>
             {deployments.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-6 text-center text-muted-foreground">
-                  No deployments yet.
+                  {t(language, "projectDetail.noDeployments")}
                 </td>
               </tr>
             ) : (
@@ -50,7 +55,7 @@ export default function RecentDeploysTable({ deployments }: RecentDeploysTablePr
                     {dep.status}
                   </td>
                   <td className="py-2 text-muted-foreground">
-                    {new Date(dep.createdAt).toLocaleString()}
+                    {new Date(dep.createdAt).toLocaleString(locale)}
                   </td>
                 </tr>
               ))

@@ -1,6 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { t } from "@/lib/settingsI18n";
 import type { MonitoringTimeRange } from "@/types";
 
 const RANGES: { label: string; value: MonitoringTimeRange }[] = [
@@ -18,6 +20,8 @@ interface TimeRangeSelectorProps {
 }
 
 export default function TimeRangeSelector({ value, onChange }: TimeRangeSelectorProps) {
+  const language = useLanguagePreference();
+
   return (
     <div className="flex items-center gap-1 flex-wrap">
       {RANGES.map((r) => (
@@ -31,7 +35,7 @@ export default function TimeRangeSelector({ value, onChange }: TimeRangeSelector
               : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
           )}
         >
-          {r.label}
+          {r.value === "custom" ? t(language, "filters.custom") : r.label}
         </button>
       ))}
     </div>

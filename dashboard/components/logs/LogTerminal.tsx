@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { localeFromLanguage, t } from "@/lib/settingsI18n";
 import type { LogEntry, LogLevel } from "@/types";
 
 // ANSI-style terminal colours per level
@@ -41,6 +43,8 @@ interface LogTerminalProps {
 }
 
 export default function LogTerminal({ entries, searchQuery, isRegex, autoScroll }: LogTerminalProps) {
+  const language = useLanguagePreference();
+  const locale = localeFromLanguage(language);
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -61,17 +65,17 @@ export default function LogTerminal({ entries, searchQuery, isRegex, autoScroll 
         <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
         <span className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
         <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-        <span className="ml-3 text-[10px] text-[#6e7681]">logs — inno-web</span>
+        <span className="ml-3 text-[10px] text-[#6e7681]">{t(language, "nav.logs")} - inno-web</span>
       </div>
 
       {entries.length === 0 ? (
-        <p className="text-[#6e7681]">No log entries match the current filters.</p>
+        <p className="text-[#6e7681]">{t(language, "logs.noEntries")}</p>
       ) : (
         entries.map((entry) => (
           <div key={entry.id} className="flex gap-2 hover:bg-white/5 rounded px-1 -mx-1 group">
             {/* timestamp */}
             <span className="flex-shrink-0 text-[#6e7681] select-none" style={{ minWidth: "13ch" }}>
-              {new Date(entry.timestamp).toLocaleTimeString("en-GB", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              {new Date(entry.timestamp).toLocaleTimeString(locale, { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}
             </span>
             {/* level */}
             <span className="flex-shrink-0 uppercase font-semibold" style={{ color: levelColor[entry.level], minWidth: "5ch" }}>

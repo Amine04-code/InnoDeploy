@@ -1,6 +1,8 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { t } from "@/lib/settingsI18n";
 
 interface PipelineConfigEditorProps {
   config: string;
@@ -13,13 +15,15 @@ export default function PipelineConfigEditor({
   readOnly = true,
   onChange,
 }: PipelineConfigEditorProps) {
+  const language = useLanguagePreference();
+
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center justify-between">
           <span>.innodeploy.yml</span>
           <span className="text-xs font-normal text-muted-foreground">
-            {readOnly ? "Read-only" : "Editable"}
+            {readOnly ? t(language, "projectDetail.readOnly") : t(language, "projectDetail.editable")}
           </span>
         </CardTitle>
       </CardHeader>

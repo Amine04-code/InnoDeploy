@@ -12,6 +12,7 @@ const orgRoutes = require("./routes/orgRoutes");
 const pipelineRoutes = require("./routes/pipelineRoutes");
 const monitoringRoutes = require("./routes/monitoringRoutes");
 const webhookRoutes = require("./routes/webhookRoutes");
+const githubRoutes = require("./routes/githubRoutes");
 const errorMiddleware = require("./middleware/errorMiddleware");
 
 const app = express();
@@ -33,6 +34,7 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/hosts", hostRoutes);
 app.use("/api/alerts", alertRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/github", githubRoutes);
 app.use("/api", orgRoutes);
 app.use("/api", pipelineRoutes);
 app.use("/api", monitoringRoutes);

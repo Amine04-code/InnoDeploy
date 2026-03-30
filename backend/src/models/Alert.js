@@ -19,7 +19,7 @@ const alertSchema = new mongoose.Schema(
     },
     ruleType: {
       type: String,
-      enum: ["cpu", "memory", "latency", "availability", "deployment"],
+      enum: ["cpu", "memory", "latency", "availability", "deployment", "disk", "certificate"],
       required: true,
     },
     acknowledged: {

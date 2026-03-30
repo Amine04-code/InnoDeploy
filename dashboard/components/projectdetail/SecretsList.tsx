@@ -5,6 +5,8 @@ import { Eye, EyeOff, Trash2, Pencil, Plus, X, Check } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { t } from "@/lib/settingsI18n";
 import type { Secret } from "@/types";
 
 interface SecretsListProps {
@@ -15,6 +17,7 @@ interface SecretsListProps {
 }
 
 export default function SecretsList({ secrets, onAdd, onEdit, onDelete }: SecretsListProps) {
+  const language = useLanguagePreference();
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -54,10 +57,10 @@ export default function SecretsList({ secrets, onAdd, onEdit, onDelete }: Secret
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <CardTitle className="text-base">Secrets & Environment Variables</CardTitle>
+        <CardTitle className="text-base">{t(language, "projectDetail.secrets")}</CardTitle>
         <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
           <Plus className="h-3.5 w-3.5 mr-1" />
-          Add
+          {t(language, "projectDetail.add")}
         </Button>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -70,7 +73,7 @@ export default function SecretsList({ secrets, onAdd, onEdit, onDelete }: Secret
               className="font-mono text-xs h-8"
             />
             <Input
-              placeholder="value"
+              placeholder={t(language, "table.value")}
               value={newValue}
               onChange={(e) => setNewValue(e.target.value)}
               className="font-mono text-xs h-8"
@@ -85,7 +88,7 @@ export default function SecretsList({ secrets, onAdd, onEdit, onDelete }: Secret
         )}
 
         {secrets.length === 0 && !adding && (
-          <p className="text-sm text-muted-foreground py-2">No secrets configured.</p>
+          <p className="text-sm text-muted-foreground py-2">{t(language, "projectDetail.noSecrets")}</p>
         )}
 
         {secrets.map((secret) => (
@@ -119,7 +122,7 @@ export default function SecretsList({ secrets, onAdd, onEdit, onDelete }: Secret
                 <button
                   onClick={() => toggleReveal(secret.id)}
                   className="text-muted-foreground hover:text-foreground"
-                  aria-label={revealed.has(secret.id) ? "Hide" : "Reveal"}
+                  aria-label={revealed.has(secret.id) ? t(language, "actions.hide") : t(language, "actions.show")}
                 >
                   {revealed.has(secret.id) ? (
                     <EyeOff className="h-3.5 w-3.5" />
@@ -130,14 +133,14 @@ export default function SecretsList({ secrets, onAdd, onEdit, onDelete }: Secret
                 <button
                   onClick={() => startEdit(secret)}
                   className="text-muted-foreground hover:text-foreground"
-                  aria-label="Edit"
+                  aria-label={t(language, "actions.edit")}
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => onDelete(secret.id)}
                   className="text-muted-foreground hover:text-destructive"
-                  aria-label="Delete"
+                  aria-label={t(language, "actions.delete")}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

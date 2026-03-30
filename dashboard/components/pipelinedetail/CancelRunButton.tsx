@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { t } from "@/lib/settingsI18n";
 
 interface CancelRunButtonProps {
   runId: string;
@@ -11,6 +13,7 @@ interface CancelRunButtonProps {
 
 export default function CancelRunButton({ runId, onCancel }: CancelRunButtonProps) {
   const [loading, setLoading] = useState(false);
+  const language = useLanguagePreference();
 
   const handleClick = async () => {
     setLoading(true);
@@ -28,7 +31,7 @@ export default function CancelRunButton({ runId, onCancel }: CancelRunButtonProp
       ) : (
         <Square className="h-3.5 w-3.5 mr-1.5" fill="currentColor" />
       )}
-      {loading ? "Cancelling…" : "Cancel Run"}
+      {loading ? t(language, "pipeline.cancelling") : t(language, "pipeline.cancelRun")}
     </Button>
   );
 }

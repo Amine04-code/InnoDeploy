@@ -1,6 +1,8 @@
 "use client";
 
 import { Moon, Monitor, Sun } from "lucide-react";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { t } from "@/lib/settingsI18n";
 import { cn } from "@/lib/utils";
 import type { ThemePreference } from "@/types";
 
@@ -10,16 +12,18 @@ interface ThemeToggleProps {
   onChange: (value: ThemePreference) => void;
 }
 
-const options: Array<{ value: ThemePreference; label: string; icon: typeof Sun }> = [
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
-  { value: "system", label: "System", icon: Monitor },
+const options: Array<{ value: ThemePreference; labelKey: string; icon: typeof Sun }> = [
+  { value: "light", labelKey: "theme.light", icon: Sun },
+  { value: "dark", labelKey: "theme.dark", icon: Moon },
+  { value: "system", labelKey: "theme.system", icon: Monitor },
 ];
 
 export default function ThemeToggle({ value, disabled, onChange }: ThemeToggleProps) {
+  const language = useLanguagePreference();
+
   return (
     <div className="grid grid-cols-3 gap-2">
-      {options.map(({ value: optionValue, label, icon: Icon }) => (
+      {options.map(({ value: optionValue, labelKey, icon: Icon }) => (
         <button
           key={optionValue}
           type="button"
@@ -32,7 +36,7 @@ export default function ThemeToggle({ value, disabled, onChange }: ThemeTogglePr
           )}
         >
           <Icon className="h-4 w-4" />
-          {label}
+          {t(language, labelKey)}
         </button>
       ))}
     </div>

@@ -17,6 +17,12 @@ const getOAuthRedirectUrl = () => process.env.OAUTH_REDIRECT_URL || `${process.e
 const getGoogleCallbackUrl = () => process.env.GOOGLE_CALLBACK_URL || `${getApiBaseUrl()}/auth/google/callback`;
 const getGithubCallbackUrl = () => process.env.GITHUB_CALLBACK_URL || `${getApiBaseUrl()}/auth/github/callback`;
 
+const sanitizeNextPath = (raw) => {
+  if (typeof raw !== "string") return null;
+  if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+  return raw;
+};
+
 const encodeUserParam = (user) => Buffer.from(JSON.stringify(user)).toString("base64url");
 
 const redirectWithResult = (res, params) => {
@@ -27,21 +33,34 @@ const redirectWithResult = (res, params) => {
   return res.redirect(callbackUrl.toString());
 };
 
-const createStateToken = async (provider) => {
+const createStateToken = async (provider, metadata = {}) => {
   const state = crypto.randomBytes(18).toString("hex");
-  await redisClient.set(`oauth:state:${state}`, provider, { EX: OAUTH_STATE_TTL });
+  const payload = JSON.stringify({ provider, metadata });
+  await redisClient.set(`oauth:state:${state}`, payload, { EX: OAUTH_STATE_TTL });
   return state;
 };
 
 const validateStateToken = async (state, expectedProvider) => {
   if (!state) return false;
   const key = `oauth:state:${state}`;
-  const storedProvider = await redisClient.get(key);
-  if (!storedProvider || storedProvider !== expectedProvider) {
+  const rawPayload = await redisClient.get(key);
+  if (!rawPayload) {
     return false;
   }
+
+  let payload;
+  try {
+    payload = JSON.parse(rawPayload);
+  } catch {
+    payload = { provider: rawPayload, metadata: {} };
+  }
+
+  if (!payload || payload.provider !== expectedProvider) {
+    return false;
+  }
+
   await redisClient.del(key);
-  return true;
+  return payload.metadata || {};
 };
 
 const issueAuthTokens = async (user) => {
@@ -52,7 +71,7 @@ const issueAuthTokens = async (user) => {
   return { accessToken, refreshToken };
 };
 
-const findOrCreateOAuthUser = async ({ name, email, avatar }) => {
+const findOrCreateOAuthUser = async ({ name, email, avatar, github }) => {
   const normalizedEmail = String(email || "").trim().toLowerCase();
   if (!normalizedEmail) {
     throw new Error("OAuth provider did not return an email");
@@ -67,12 +86,34 @@ const findOrCreateOAuthUser = async ({ name, email, avatar }) => {
       avatar: avatar || null,
       role: "developer",
       organisationId: null,
+      github: github
+        ? {
+            username: github.username || null,
+            accessToken: github.accessToken || null,
+            connectedAt: github.accessToken ? new Date() : null,
+          }
+        : undefined,
     });
     return user;
   }
 
+  let hasChanges = false;
+
   if (avatar && user.avatar !== avatar) {
     user.avatar = avatar;
+    hasChanges = true;
+  }
+
+  if (github?.accessToken) {
+    user.github = {
+      username: github.username || user.github?.username || null,
+      accessToken: github.accessToken,
+      connectedAt: new Date(),
+    };
+    hasChanges = true;
+  }
+
+  if (hasChanges) {
     await user.save();
   }
 
@@ -173,6 +214,10 @@ const exchangeGithubCodeForProfile = async (code) => {
     name: profile.name || profile.login,
     email: primary?.email,
     avatar: profile.avatar_url || null,
+    github: {
+      username: profile.login || null,
+      accessToken,
+    },
   };
 };
 
@@ -337,7 +382,9 @@ const startGoogleOAuth = async (req, res, next) => {
       return res.status(500).json({ message: "Google OAuth is not configured" });
     }
 
-    const state = await createStateToken("google");
+    const nextPath = sanitizeNextPath(req.query.next);
+    const mode = req.query.mode === "connect" ? "connect" : "auth";
+    const state = await createStateToken("google", { nextPath, mode });
     const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
     googleAuthUrl.searchParams.set("client_id", process.env.GOOGLE_CLIENT_ID);
     googleAuthUrl.searchParams.set("redirect_uri", getGoogleCallbackUrl());
@@ -365,8 +412,8 @@ const googleOAuthCallback = async (req, res, next) => {
       return redirectWithResult(res, { error: "google_oauth_missing_code" });
     }
 
-    const isStateValid = await validateStateToken(state, "google");
-    if (!isStateValid) {
+    const stateMetadata = await validateStateToken(state, "google");
+    if (!stateMetadata) {
       return redirectWithResult(res, { error: "google_oauth_invalid_state" });
     }
 
@@ -374,10 +421,15 @@ const googleOAuthCallback = async (req, res, next) => {
     const user = await findOrCreateOAuthUser(profile);
     const { accessToken, refreshToken } = await issueAuthTokens(user);
 
+    const nextPath = sanitizeNextPath(stateMetadata.nextPath);
+    const mode = stateMetadata.mode === "connect" ? "connect" : "auth";
+
     return redirectWithResult(res, {
       accessToken,
       refreshToken,
       user: encodeUserParam({ id: String(user._id), name: user.name, email: user.email, role: user.role }),
+      ...(nextPath ? { next: nextPath } : {}),
+      ...(mode === "connect" ? { mode } : {}),
     });
   } catch (error) {
     console.error("Google OAuth callback failed:", error?.message || error);
@@ -394,7 +446,9 @@ const startGithubOAuth = async (req, res, next) => {
       return res.status(500).json({ message: "GitHub OAuth is not configured" });
     }
 
-    const state = await createStateToken("github");
+    const nextPath = sanitizeNextPath(req.query.next);
+    const mode = req.query.mode === "connect" ? "connect" : "auth";
+    const state = await createStateToken("github", { nextPath, mode });
     const githubAuthUrl = new URL("https://github.com/login/oauth/authorize");
     githubAuthUrl.searchParams.set("client_id", process.env.GITHUB_CLIENT_ID);
     githubAuthUrl.searchParams.set("redirect_uri", getGithubCallbackUrl());
@@ -420,8 +474,8 @@ const githubOAuthCallback = async (req, res, next) => {
       return redirectWithResult(res, { error: "github_oauth_missing_code" });
     }
 
-    const isStateValid = await validateStateToken(state, "github");
-    if (!isStateValid) {
+    const stateMetadata = await validateStateToken(state, "github");
+    if (!stateMetadata) {
       return redirectWithResult(res, { error: "github_oauth_invalid_state" });
     }
 
@@ -429,10 +483,15 @@ const githubOAuthCallback = async (req, res, next) => {
     const user = await findOrCreateOAuthUser(profile);
     const { accessToken, refreshToken } = await issueAuthTokens(user);
 
+    const nextPath = sanitizeNextPath(stateMetadata.nextPath);
+    const mode = stateMetadata.mode === "connect" ? "connect" : "auth";
+
     return redirectWithResult(res, {
       accessToken,
       refreshToken,
       user: encodeUserParam({ id: String(user._id), name: user.name, email: user.email, role: user.role }),
+      ...(nextPath ? { next: nextPath } : {}),
+      ...(mode === "connect" ? { mode } : {}),
     });
   } catch (error) {
     console.error("GitHub OAuth callback failed:", error?.message || error);

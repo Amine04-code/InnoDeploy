@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import InviteMemberButton from "@/components/settingspage/InviteMemberButton";
 import RoleEditor from "@/components/settingspage/RoleEditor";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { roleLabel, t } from "@/lib/settingsI18n";
 import type { MemberRole, OrganisationInvitation, OrganisationMember } from "@/types";
 
 interface MembersTableProps {
@@ -32,12 +34,14 @@ export default function MembersTable({
   busyMemberId,
   inviting,
 }: MembersTableProps) {
+  const language = useLanguagePreference();
+
   return (
     <Card>
       <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <CardTitle className="text-xl">Members</CardTitle>
-          <CardDescription>Manage access across owners, admins, developers, and viewers.</CardDescription>
+          <CardTitle className="text-xl">{t(language, "members.title")}</CardTitle>
+          <CardDescription>{t(language, "members.description")}</CardDescription>
         </div>
         {canManage && <InviteMemberButton onInvite={onInvite} loading={inviting} />}
       </CardHeader>
@@ -46,10 +50,10 @@ export default function MembersTable({
           <table className="min-w-full divide-y divide-border text-sm">
             <thead className="bg-muted/50 text-left text-muted-foreground">
               <tr>
-                <th className="px-4 py-3 font-medium">Member</th>
-                <th className="px-4 py-3 font-medium">Role</th>
-                <th className="px-4 py-3 font-medium">Joined</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
+                <th className="px-4 py-3 font-medium">{t(language, "members.member")}</th>
+                <th className="px-4 py-3 font-medium">{t(language, "members.role")}</th>
+                <th className="px-4 py-3 font-medium">{t(language, "members.joined")}</th>
+                <th className="px-4 py-3 font-medium">{t(language, "members.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border bg-card">
@@ -67,7 +71,7 @@ export default function MembersTable({
                       {canManage ? (
                         <RoleEditor value={member.role} disabled={isBusy} onChange={(role) => void onRoleChange(member.id, role)} />
                       ) : (
-                        <span className="capitalize">{member.role}</span>
+                        <span className="capitalize">{roleLabel(language, member.role)}</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{new Date(member.joinedAt).toLocaleDateString()}</td>
@@ -80,10 +84,10 @@ export default function MembersTable({
                           onClick={() => void onRemove(member.id)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Remove
+                          {t(language, "members.remove")}
                         </Button>
                       ) : (
-                        <span className="text-muted-foreground">No access</span>
+                        <span className="text-muted-foreground">{t(language, "members.noAccess")}</span>
                       )}
                     </td>
                   </tr>
@@ -94,9 +98,9 @@ export default function MembersTable({
         </div>
 
         <div className="space-y-3 rounded-lg border border-dashed p-4">
-          <div className="text-sm font-medium">Pending invitations</div>
+          <div className="text-sm font-medium">{t(language, "members.pendingInvitations")}</div>
           {invitations.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No pending invites.</p>
+            <p className="text-sm text-muted-foreground">{t(language, "members.noInvites")}</p>
           ) : (
             <div className="space-y-2">
               {invitations.map((invite) => (
@@ -104,12 +108,12 @@ export default function MembersTable({
                   <div>
                     <div className="font-medium">{invite.email}</div>
                     <div className="text-muted-foreground">
-                      {invite.role} · {invite.status} · {new Date(invite.invitedAt).toLocaleDateString()}
+                      {roleLabel(language, invite.role)} · {invite.status} · {new Date(invite.invitedAt).toLocaleDateString()}
                     </div>
                   </div>
                   {canManage && invite.status === "pending" && (
                     <Button variant="outline" size="sm" onClick={() => void onRevokeInvitation(invite.id)}>
-                      Revoke
+                      {t(language, "members.revoke")}
                     </Button>
                   )}
                 </div>

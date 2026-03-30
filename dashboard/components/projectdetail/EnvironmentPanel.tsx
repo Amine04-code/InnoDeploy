@@ -3,6 +3,8 @@
 import { Globe, Box, Copy, Layers, ArrowRightLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { serviceStatusLabel, t } from "@/lib/settingsI18n";
 import type { Environment, EnvironmentStatus } from "@/types";
 
 const statusStyle: Record<EnvironmentStatus, string> = {
@@ -16,25 +18,27 @@ interface EnvironmentPanelProps {
 }
 
 export default function EnvironmentPanel({ environment }: EnvironmentPanelProps) {
+  const language = useLanguagePreference();
+
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center justify-between">
           {environment.name}
           <span className={cn("text-sm font-medium capitalize", statusStyle[environment.status])}>
-            {environment.status}
+            {serviceStatusLabel(language, environment.status)}
           </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3 text-sm">
         <div className="flex items-center gap-2">
           <Box className="h-4 w-4 text-muted-foreground" />
-          <span className="text-muted-foreground">Image:</span>
+          <span className="text-muted-foreground">{t(language, "projectDetail.image")}</span>
           <span className="font-mono text-xs truncate">{environment.image}</span>
         </div>
         <div className="flex items-center gap-2">
           <Globe className="h-4 w-4 text-muted-foreground" />
-          <span className="text-muted-foreground">Domain:</span>
+          <span className="text-muted-foreground">{t(language, "projectDetail.domain")}</span>
           <a
             href={`https://${environment.domain}`}
             target="_blank"
@@ -46,12 +50,12 @@ export default function EnvironmentPanel({ environment }: EnvironmentPanelProps)
         </div>
         <div className="flex items-center gap-2">
           <Copy className="h-4 w-4 text-muted-foreground" />
-          <span className="text-muted-foreground">Replicas:</span>
+          <span className="text-muted-foreground">{t(language, "projectDetail.replicas")}</span>
           <span>{environment.replicas}</span>
         </div>
         <div className="flex items-center gap-2">
           <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
-          <span className="text-muted-foreground">Strategy:</span>
+          <span className="text-muted-foreground">{t(language, "projectDetail.strategy")}</span>
           <span className="capitalize">{environment.strategy}</span>
         </div>
       </CardContent>

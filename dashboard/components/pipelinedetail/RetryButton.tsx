@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { RotateCcw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { t } from "@/lib/settingsI18n";
 
 interface RetryButtonProps {
   runId: string;
@@ -11,6 +13,7 @@ interface RetryButtonProps {
 
 export default function RetryButton({ runId, onRetry }: RetryButtonProps) {
   const [loading, setLoading] = useState(false);
+  const language = useLanguagePreference();
 
   const handleClick = async () => {
     setLoading(true);
@@ -28,7 +31,7 @@ export default function RetryButton({ runId, onRetry }: RetryButtonProps) {
       ) : (
         <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
       )}
-      {loading ? "Retrying…" : "Retry from Failed Stage"}
+      {loading ? t(language, "pipeline.retrying") : t(language, "pipeline.retryFailed")}
     </Button>
   );
 }

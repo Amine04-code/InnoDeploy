@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Play, ChevronDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { t } from "@/lib/settingsI18n";
 
 const BRANCHES = ["main", "develop", "staging", "feature/pipeline-page"];
 
@@ -13,6 +15,7 @@ interface TriggerPipelineButtonProps {
 export default function TriggerPipelineButton({ onTrigger }: TriggerPipelineButtonProps) {
   const [branch, setBranch] = useState("main");
   const [loading, setLoading] = useState(false);
+  const language = useLanguagePreference();
 
   const handleTrigger = async () => {
     setLoading(true);
@@ -44,7 +47,7 @@ export default function TriggerPipelineButton({ onTrigger }: TriggerPipelineButt
         ) : (
           <Play className="h-4 w-4 mr-2" fill="currentColor" />
         )}
-        {loading ? "Triggering…" : "Trigger Pipeline"}
+        {loading ? t(language, "pipeline.triggering") : t(language, "pipeline.trigger")}
       </Button>
     </div>
   );

@@ -4,11 +4,49 @@ const Log = require("../models/Log");
 const Metric = require("../models/Metric");
 const Pipeline = require("../models/Pipeline");
 const User = require("../models/User");
+const Organisation = require("../models/Organisation");
 const mongoose = require("mongoose");
 
 const getOrganisationId = async (userId) => {
   const user = await User.findById(userId).select("organisationId");
   return user?.organisationId ?? null;
+};
+
+const toSlug = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+const ensureOrganisationId = async (userId) => {
+  const user = await User.findById(userId).select("name email role organisationId");
+  if (!user) return null;
+  if (user.organisationId) return user.organisationId;
+
+  const baseSlug =
+    toSlug(user.name) ||
+    toSlug(String(user.email || "").split("@")[0]) ||
+    `workspace-${String(user._id).slice(-6)}`;
+
+  let slug = baseSlug;
+  let suffix = 1;
+  while (await Organisation.findOne({ slug }).select("_id")) {
+    suffix += 1;
+    slug = `${baseSlug}-${suffix}`;
+  }
+
+  const organisation = await Organisation.create({
+    name: user.name ? `${user.name}'s Workspace` : "My Workspace",
+    slug,
+    members: [{ userId: user._id, role: "owner" }],
+  });
+
+  user.organisationId = organisation._id;
+  user.role = "owner";
+  await user.save();
+
+  return organisation._id;
 };
 
 const mapProject = (project) => ({
@@ -67,7 +105,10 @@ const getProject = async (req, res, next) => {
 
 const createProject = async (req, res, next) => {
   try {
-    const organisationId = await getOrganisationId(req.user.id);
+    let organisationId = await getOrganisationId(req.user.id);
+    if (!organisationId) {
+      organisationId = await ensureOrganisationId(req.user.id);
+    }
     if (!organisationId) {
       return res.status(400).json({ message: "User is not attached to an organisation" });
     }

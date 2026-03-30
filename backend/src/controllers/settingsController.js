@@ -5,9 +5,102 @@ const Host = require("../models/Host");
 const Organisation = require("../models/Organisation");
 const Project = require("../models/Project");
 const User = require("../models/User");
+const { dispatchOrganisationNotification } = require("../services/notificationDispatcher");
 
 const ROLES = ["owner", "admin", "developer", "viewer"];
 const LANGUAGES = ["english", "french", "arabic"];
+const SECRET_MASK = "********";
+const SENSITIVE_HEADER_PATTERN = /(authorization|token|secret|password|api[-_]?key)/i;
+
+const parseStringArray = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item || "").trim()).filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
+const parseHeaderMap = (value) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const result = {};
+  for (const [key, item] of Object.entries(value)) {
+    const normalizedKey = String(key || "").trim();
+    if (!normalizedKey) continue;
+    result[normalizedKey] = String(item ?? "");
+  }
+
+  return result;
+};
+
+const toPlainObject = (value) => {
+  if (value instanceof Map) {
+    return Object.fromEntries(value.entries());
+  }
+
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value;
+  }
+
+  return {};
+};
+
+const isMaskedValue = (value) => String(value || "") === SECRET_MASK;
+
+const maskSecret = (value) => (value ? SECRET_MASK : "");
+
+const maskWebhookHeaders = (headers) => {
+  const plain = toPlainObject(headers);
+  const masked = {};
+
+  for (const [key, value] of Object.entries(plain)) {
+    const normalized = String(key || "").trim();
+    if (!normalized) continue;
+
+    const stringValue = String(value ?? "");
+    masked[normalized] = SENSITIVE_HEADER_PATTERN.test(normalized) && stringValue ? SECRET_MASK : stringValue;
+  }
+
+  return masked;
+};
+
+const mergeWebhookHeadersWithMask = ({ incoming, existing }) => {
+  const merged = {};
+  const current = toPlainObject(existing);
+
+  for (const [key, value] of Object.entries(incoming)) {
+    const normalized = String(key || "").trim();
+    if (!normalized) continue;
+
+    if (SENSITIVE_HEADER_PATTERN.test(normalized) && isMaskedValue(value)) {
+      merged[normalized] = String(current[normalized] ?? "");
+      continue;
+    }
+
+    merged[normalized] = String(value ?? "");
+  }
+
+  return merged;
+};
+
+const sanitizeNotificationChannels = (channels) => {
+  const plain = toPlainObject(channels);
+  return {
+    ...plain,
+    smtpPassword: maskSecret(plain.smtpPassword),
+    expoAccessToken: maskSecret(plain.expoAccessToken),
+    webhookHeaders: maskWebhookHeaders(plain.webhookHeaders),
+  };
+};
 
 const getContext = async (userId) => {
   const user = await User.findById(userId);
@@ -58,7 +151,7 @@ const serializeSettings = (organisation, user) => ({
   },
   members: organisation.members.map(mapMember),
   invitations: organisation.invitations.map(mapInvitation),
-  notificationChannels: organisation.notificationChannels,
+  notificationChannels: sanitizeNotificationChannels(organisation.notificationChannels),
   dockerRegistry: organisation.dockerRegistry,
   gitProvider: organisation.gitProvider,
   apiKeys: organisation.apiKeys.map(mapApiKey),
@@ -286,22 +379,95 @@ const updateNotificationChannels = async (req, res, next) => {
     const context = await requireOrganisationContext(req, res);
     if (!context) return;
 
+    const currentChannels = toPlainObject(context.organisation.notificationChannels);
+    const hasEmailRecipients = Object.prototype.hasOwnProperty.call(req.body, "emailRecipients");
+    const hasExpoPushTokens = Object.prototype.hasOwnProperty.call(req.body, "expoPushTokens");
+    const hasWebhookHeaders = Object.prototype.hasOwnProperty.call(req.body, "webhookHeaders");
+
+    const emailRecipients = hasEmailRecipients
+      ? parseStringArray(req.body.emailRecipients)
+      : parseStringArray(currentChannels.emailRecipients);
+    const expoPushTokens = hasExpoPushTokens
+      ? parseStringArray(req.body.expoPushTokens)
+      : parseStringArray(currentChannels.expoPushTokens);
+    const webhookHeaders = hasWebhookHeaders
+      ? mergeWebhookHeadersWithMask({
+          incoming: parseHeaderMap(req.body.webhookHeaders),
+          existing: currentChannels.webhookHeaders,
+        })
+      : toPlainObject(currentChannels.webhookHeaders);
+
+    const smtpPassword = req.body.smtpPassword === undefined || isMaskedValue(req.body.smtpPassword)
+      ? String(currentChannels.smtpPassword || "")
+      : String(req.body.smtpPassword || "");
+    const expoAccessToken = req.body.expoAccessToken === undefined || isMaskedValue(req.body.expoAccessToken)
+      ? String(currentChannels.expoAccessToken || "")
+      : String(req.body.expoAccessToken || "");
+
     context.organisation.notificationChannels = {
-      ...context.organisation.notificationChannels,
-      slackWebhook: req.body.slackWebhook ?? "",
-      discordWebhook: req.body.discordWebhook ?? "",
-      smtpHost: req.body.smtpHost ?? "",
-      smtpPort: Number(req.body.smtpPort ?? 587),
-      smtpUsername: req.body.smtpUsername ?? "",
-      smtpPassword: req.body.smtpPassword ?? "",
-      smtpFromEmail: req.body.smtpFromEmail ?? "",
+      ...currentChannels,
+      emailEnabled: req.body.emailEnabled ?? currentChannels.emailEnabled,
+      slackEnabled: req.body.slackEnabled ?? currentChannels.slackEnabled,
+      discordEnabled: req.body.discordEnabled ?? currentChannels.discordEnabled,
+      expoEnabled: req.body.expoEnabled ?? currentChannels.expoEnabled,
+      webhookEnabled: req.body.webhookEnabled ?? currentChannels.webhookEnabled,
+      slackWebhook: req.body.slackWebhook ?? currentChannels.slackWebhook ?? "",
+      discordWebhook: req.body.discordWebhook ?? currentChannels.discordWebhook ?? "",
+      smtpHost: req.body.smtpHost ?? currentChannels.smtpHost ?? "",
+      smtpPort: Number(req.body.smtpPort ?? currentChannels.smtpPort ?? 587),
+      smtpUsername: req.body.smtpUsername ?? currentChannels.smtpUsername ?? "",
+      smtpPassword,
+      smtpFromEmail: req.body.smtpFromEmail ?? currentChannels.smtpFromEmail ?? "",
+      emailRecipients,
+      expoAccessToken,
+      expoPushTokens,
+      webhookUrl: req.body.webhookUrl ?? currentChannels.webhookUrl ?? "",
+      webhookHeaders,
     };
     await context.organisation.save();
 
     res.json({
       message: "Notification channels updated",
-      notificationChannels: context.organisation.notificationChannels,
+      notificationChannels: sanitizeNotificationChannels(context.organisation.notificationChannels),
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const testNotificationChannels = async (req, res, next) => {
+  try {
+    const context = await requireOrganisationContext(req, res);
+    if (!context) return;
+
+    const channels = Array.isArray(req.body.channels)
+      ? req.body.channels.map((item) => String(item || "").trim().toLowerCase()).filter(Boolean)
+      : [];
+
+    const requestedChannels = channels.length > 0
+      ? {
+          email: channels.includes("email"),
+          slack: channels.includes("slack"),
+          discord: channels.includes("discord"),
+          expo: channels.includes("expo"),
+          webhook: channels.includes("webhook"),
+        }
+      : null;
+
+    const result = await dispatchOrganisationNotification({
+      organisation: context.organisation,
+      event: {
+        severity: String(req.body.severity || "info"),
+        title: String(req.body.title || "InnoDeploy test notification"),
+        message: String(req.body.message || "This is a test notification from InnoDeploy."),
+        serviceName: String(req.body.serviceName || "notification-test"),
+        metricAtTrigger: Array.isArray(req.body.metricAtTrigger) ? req.body.metricAtTrigger : [],
+        metadata: { source: "settings.test", requestedBy: req.user.id },
+      },
+      requestedChannels,
+    });
+
+    res.json({ message: "Notification test completed", result });
   } catch (error) {
     next(error);
   }
@@ -474,6 +640,7 @@ module.exports = {
   updateGitProvider,
   updateMemberRole,
   updateNotificationChannels,
+  testNotificationChannels,
   updateOrganisationProfile,
   updateUserPreferences,
 };

@@ -1,6 +1,8 @@
 const Pipeline = require("../models/Pipeline");
 const Project = require("../models/Project");
 const Log = require("../models/Log");
+const { enqueuePipelineJob } = require("../services/jobQueue");
+const { resolvePipelineConfig } = require("../services/pipelineConfig");
 
 const parseRepositoryUrl = (provider, payload) => {
   if (provider === "github") {
@@ -37,21 +39,49 @@ const receiveWebhook = (provider) => async (req, res, next) => {
       return res.status(202).json({ message: "Webhook accepted but no matching project found" });
     }
 
+    const branch = parseBranch(payload);
+    const resolvedConfig = await resolvePipelineConfig({
+      repoUrl: project.repoUrl,
+      branch,
+      inlineConfig: payload?.pipelineConfig,
+    });
+
     const run = await Pipeline.create({
       projectId: project._id,
       version: String(payload?.after || payload?.checkout_sha || Date.now()),
-      strategy: "rolling",
+      strategy: resolvedConfig.strategy || "rolling",
       runType: "pipeline",
       status: "pending",
-      branch: parseBranch(payload),
+      branch,
       triggeredBy: `${provider}-webhook`,
-      environment: "staging",
-      steps: [
-        { name: "checkout", command: "git checkout", status: "pending", duration: 0, output: "" },
-        { name: "build", command: "npm run build", status: "pending", duration: 0, output: "" },
-        { name: "deploy", command: "npm run deploy", status: "pending", duration: 0, output: "" },
-      ],
-      config: JSON.stringify({ provider, event: req.headers["x-github-event"] || req.headers["x-gitlab-event"] || "push" }),
+      environment: resolvedConfig.environment || "staging",
+      steps: resolvedConfig.steps.map((step) => ({
+        name: String(step.name || "stage"),
+        command: String(step.command || "echo noop"),
+        status: "pending",
+        duration: 0,
+        output: "",
+      })),
+      config: JSON.stringify({
+        provider,
+        event: req.headers["x-github-event"] || req.headers["x-gitlab-event"] || "push",
+        repoUrl: String(project.repoUrl || ""),
+        configSource: resolvedConfig.source,
+        configPath: resolvedConfig.sourcePath,
+      }),
+    });
+
+    const queueJob = await enqueuePipelineJob({
+      pipelineId: String(run._id),
+      projectId: String(project._id),
+      version: run.version,
+      strategy: run.strategy,
+      branch: run.branch,
+      triggeredBy: run.triggeredBy,
+      environment: run.environment,
+      repoUrl: project.repoUrl,
+      notifications: resolvedConfig.notifications,
+      steps: run.steps.map((step) => ({ name: step.name, command: step.command })),
     });
 
     await Log.create({
@@ -63,7 +93,7 @@ const receiveWebhook = (provider) => async (req, res, next) => {
       source: "webhook",
     });
 
-    res.status(202).json({ message: "Webhook accepted", runId: String(run._id) });
+    res.status(202).json({ message: "Webhook accepted", runId: String(run._id), queueJobId: String(queueJob.id) });
   } catch (error) {
     next(error);
   }

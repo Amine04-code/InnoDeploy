@@ -3,6 +3,8 @@
 import { Rocket, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { t } from "@/lib/settingsI18n";
 
 interface DeployButtonProps {
   environmentName: string;
@@ -11,6 +13,7 @@ interface DeployButtonProps {
 
 export default function DeployButton({ environmentName, onDeploy }: DeployButtonProps) {
   const [loading, setLoading] = useState(false);
+  const language = useLanguagePreference();
 
   const handleClick = async () => {
     setLoading(true);
@@ -28,7 +31,7 @@ export default function DeployButton({ environmentName, onDeploy }: DeployButton
       ) : (
         <Rocket className="h-4 w-4 mr-2" />
       )}
-      {loading ? "Deploying…" : `Deploy to ${environmentName}`}
+      {loading ? t(language, "projectDetail.deploying") : t(language, "projectDetail.deployTo", { env: environmentName })}
     </Button>
   );
 }

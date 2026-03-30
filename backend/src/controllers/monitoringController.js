@@ -5,6 +5,76 @@ const Metric = require("../models/Metric");
 const Pipeline = require("../models/Pipeline");
 const Project = require("../models/Project");
 const User = require("../models/User");
+const { getMonitorWorkerStatus } = require("../services/monitorWorker");
+
+const LOG_SEARCH_MODE = String(process.env.LOG_SEARCH_MODE || "text").toLowerCase();
+const LOG_ATLAS_INDEX = String(process.env.LOG_ATLAS_INDEX || "logs_index");
+
+const parseLimit = (value, fallback = 200) => Math.max(1, Math.min(Number(value || fallback), 1000));
+
+const findLogsWithSearch = async ({ projectId, baseQuery, searchTerm, limit }) => {
+  if (LOG_SEARCH_MODE === "atlas") {
+    const searchFilters = [{ equals: { path: "projectId", value: projectId } }];
+
+    if (baseQuery.level) searchFilters.push({ equals: { path: "level", value: baseQuery.level } });
+    if (baseQuery.environment) {
+      searchFilters.push({ equals: { path: "environment", value: baseQuery.environment } });
+    }
+    if (baseQuery.source) searchFilters.push({ equals: { path: "source", value: baseQuery.source } });
+    if (baseQuery.containerName) {
+      searchFilters.push({ equals: { path: "containerName", value: baseQuery.containerName } });
+    }
+
+    try {
+      const logs = await Log.aggregate([
+        {
+          $search: {
+            index: LOG_ATLAS_INDEX,
+            compound: {
+              must: [
+                {
+                  text: {
+                    query: searchTerm,
+                    path: ["message", "source", "containerName"],
+                  },
+                },
+              ],
+              filter: searchFilters,
+            },
+          },
+        },
+        { $sort: { eventAt: -1, createdAt: -1 } },
+        { $limit: limit },
+      ]);
+
+      return logs;
+    } catch (_atlasError) {
+      // Fall through to local index/regex search.
+    }
+  }
+
+  try {
+    const logs = await Log.find(
+      {
+        ...baseQuery,
+        $text: { $search: searchTerm },
+      },
+      { score: { $meta: "textScore" } }
+    )
+      .sort({ score: { $meta: "textScore" }, eventAt: -1, createdAt: -1 })
+      .limit(limit);
+
+    if (logs.length > 0) {
+      return logs;
+    }
+  } catch (_textSearchError) {
+    // Fall through to regex search when text index is unavailable.
+  }
+
+  return Log.find({ ...baseQuery, message: { $regex: searchTerm, $options: "i" } })
+    .sort({ eventAt: -1, createdAt: -1 })
+    .limit(limit);
+};
 
 const getOrganisationId = async (userId) => {
   const user = await User.findById(userId).select("organisationId");
@@ -41,9 +111,7 @@ const getProjectMetrics = async (req, res, next) => {
       if (to) query.recordedAt.$lte = new Date(String(to));
     }
 
-    const metrics = await Metric.find(query)
-      .sort({ recordedAt: -1 })
-      .limit(Math.max(1, Math.min(Number(limit), 1000)));
+    const metrics = await Metric.find(query).sort({ recordedAt: -1 }).limit(parseLimit(limit));
 
     res.json({ metrics });
   } catch (error) {
@@ -63,17 +131,23 @@ const getProjectLogs = async (req, res, next) => {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    const { level, search, environment, source, limit = 200 } = req.query;
+    const { level, search, environment, source, container, limit = 200 } = req.query;
     const query = { projectId: project._id };
 
     if (level) query.level = String(level);
     if (environment) query.environment = String(environment);
     if (source) query.source = String(source);
-    if (search) query.message = { $regex: String(search), $options: "i" };
+    if (container) query.containerName = String(container);
 
-    const logs = await Log.find(query)
-      .sort({ createdAt: -1 })
-      .limit(Math.max(1, Math.min(Number(limit), 1000)));
+    const normalizedSearch = String(search || "").trim();
+    const logs = normalizedSearch
+      ? await findLogsWithSearch({
+          projectId: project._id,
+          baseQuery: query,
+          searchTerm: normalizedSearch,
+          limit: parseLimit(limit),
+        })
+      : await Log.find(query).sort({ eventAt: -1, createdAt: -1 }).limit(parseLimit(limit));
 
     res.json({ logs });
   } catch (error) {
@@ -98,13 +172,23 @@ const getProjectStatus = async (req, res, next) => {
       Pipeline.findOne({ projectId: project._id }).sort({ createdAt: -1 }),
     ]);
 
-    const degraded =
-      (latestMetric && (latestMetric.cpu > 90 || latestMetric.memory > 90 || latestMetric.uptime < 95)) ||
-      (latestRun && latestRun.status === "failed");
+    const cpuLoad = Number(latestMetric?.cpu_percent ?? latestMetric?.cpu ?? 0);
+    const memoryLoad = Number(latestMetric?.memory_percent ?? latestMetric?.memory ?? 0);
+    const availability = Number(latestMetric?.uptime ?? 0);
+    const healthState = String(latestMetric?.health_state || "").toLowerCase();
+
+    let status = "up";
+    if (healthState === "down") {
+      status = "down";
+    } else if (healthState === "degraded") {
+      status = "degraded";
+    } else if ((latestMetric && (cpuLoad > 90 || memoryLoad > 90 || availability < 95)) || (latestRun && latestRun.status === "failed")) {
+      status = "degraded";
+    }
 
     res.json({
       projectId: String(project._id),
-      status: degraded ? "degraded" : "up",
+      status,
       projectStatus: project.status,
       latestMetric,
       latestRun,
@@ -115,8 +199,26 @@ const getProjectStatus = async (req, res, next) => {
   }
 };
 
+const getMonitoringStreamInfo = async (_req, res, next) => {
+  try {
+    const worker = getMonitorWorkerStatus();
+
+    res.json({
+      worker,
+      websocket: {
+        transport: "redis-pubsub",
+        note: "Subscribe your websocket gateway to the stream channel for global updates, or to projectPrefix + <projectId> for scoped updates.",
+      },
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProjectMetrics,
   getProjectLogs,
   getProjectStatus,
+  getMonitoringStreamInfo,
 };

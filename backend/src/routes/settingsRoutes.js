@@ -16,6 +16,7 @@ const {
   updateGitProvider,
   updateMemberRole,
   updateNotificationChannels,
+  testNotificationChannels,
   updateOrganisationProfile,
   updateUserPreferences,
 } = require("../controllers/settingsController");
@@ -29,6 +30,7 @@ router.patch("/members/:memberId/role", authMiddleware, requireRole("owner", "ad
 router.delete("/members/:memberId", authMiddleware, requireRole("owner", "admin"), removeMember);
 router.delete("/invitations/:id", authMiddleware, requireRole("owner", "admin"), revokeInvitation);
 router.put("/notifications", authMiddleware, requireRole("owner", "admin"), updateNotificationChannels);
+router.post("/notifications/test", authMiddleware, requireRole("owner", "admin"), testNotificationChannels);
 router.put("/docker-registry", authMiddleware, requireRole("owner", "admin"), updateDockerRegistry);
 router.put("/git-provider", authMiddleware, requireRole("owner", "admin"), updateGitProvider);
 router.put("/preferences", authMiddleware, updateUserPreferences);

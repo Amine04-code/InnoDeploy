@@ -1,0 +1,44 @@
+<svg width="1200" height="860" viewBox="0 0 1200 860" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="60" y1="60" x2="1140" y2="800" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1D3F"/>
+      <stop offset="1" stop-color="#081634"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="120" y1="190" x2="1080" y2="770" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#102B57"/>
+      <stop offset="1" stop-color="#0C2246"/>
+    </linearGradient>
+    <linearGradient id="lineGrad" x1="300" y1="0" x2="920" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#63D7F4"/>
+      <stop offset="1" stop-color="#71E5C5"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(880 430) rotate(90) scale(130 130)">
+      <stop stop-color="#69D9F0" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#69D9F0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect x="24" y="24" width="1152" height="812" rx="34" fill="url(#bgGrad)" stroke="#1E3D6D" stroke-width="2"/>
+
+  <rect x="80" y="80" width="230" height="82" rx="16" fill="#E9EEF5"/>
+  <text x="114" y="131" fill="#0B1222" font-size="46" font-family="Consolas, Menlo, monospace">$ git push</text>
+
+  <rect x="80" y="200" width="1040" height="580" rx="24" fill="#0A1E43" stroke="#2A5F97" stroke-width="2"/>
+  <text x="120" y="262" fill="#7DB8DF" font-size="38" font-family="Segoe UI, Arial, sans-serif" letter-spacing="7">PRODUCTION</text>
+
+  <rect x="120" y="302" width="960" height="166" rx="20" fill="#10274D" stroke="#2B5D8E" stroke-width="2"/>
+  <text x="152" y="368" fill="#DFEEFF" font-size="50" font-family="Segoe UI, Arial, sans-serif">app-backend</text>
+  <text x="900" y="368" fill="#66E3BD" font-size="46" font-family="Segoe UI, Arial, sans-serif">Deploying</text>
+
+  <rect x="152" y="406" width="896" height="20" rx="10" fill="#2D3E62"/>
+  <rect x="152" y="406" width="674" height="20" rx="10" fill="url(#lineGrad)"/>
+
+  <rect x="120" y="498" width="960" height="234" rx="20" fill="#10274D" stroke="#2B5D8E" stroke-width="2"/>
+  <text x="152" y="565" fill="#DFEEFF" font-size="50" font-family="Segoe UI, Arial, sans-serif">app-database</text>
+  <text x="918" y="565" fill="#66E3BD" font-size="46" font-family="Segoe UI, Arial, sans-serif">Available</text>
+
+  <text x="152" y="647" fill="#A6BEDA" font-size="40" font-family="Segoe UI, Arial, sans-serif">Latency: 24ms</text>
+  <text x="602" y="647" fill="#A6BEDA" font-size="40" font-family="Segoe UI, Arial, sans-serif">CPU: 42%</text>
+
+  <rect x="80" y="200" width="1040" height="580" rx="24" fill="url(#glow)"/>
+</svg>

@@ -155,7 +155,7 @@ export interface LogEntry {
 
 export type HostStatus = "online" | "offline";
 export type ConnectionTestStatus = "idle" | "running" | "success" | "failed";
-export type AlertRuleType = "cpu" | "memory" | "latency" | "availability" | "deployment";
+export type AlertRuleType = "cpu" | "memory" | "latency" | "availability" | "deployment" | "disk" | "certificate";
 export type AlertStatus = "open" | "acknowledged" | "resolved";
 
 export interface HostDeployedContainer {
@@ -203,6 +203,9 @@ export interface AlertRuleConfig {
   memoryThreshold: number;
   latencyThreshold: number;
   availabilityThreshold: number;
+  serviceDownFailures: number;
+  diskThreshold: number;
+  certExpiryDays: number;
   emailNotifications: boolean;
   slackNotifications: boolean;
  }
@@ -245,6 +248,11 @@ export interface OrganisationInvitation {
 }
 
 export interface NotificationChannelsConfig {
+  emailEnabled: boolean;
+  slackEnabled: boolean;
+  discordEnabled: boolean;
+  expoEnabled: boolean;
+  webhookEnabled: boolean;
   slackWebhook: string;
   discordWebhook: string;
   smtpHost: string;
@@ -252,6 +260,11 @@ export interface NotificationChannelsConfig {
   smtpUsername: string;
   smtpPassword: string;
   smtpFromEmail: string;
+  emailRecipients: string[];
+  expoAccessToken: string;
+  expoPushTokens: string[];
+  webhookUrl: string;
+  webhookHeaders: Record<string, string>;
 }
 
 export interface DockerRegistrySettings {

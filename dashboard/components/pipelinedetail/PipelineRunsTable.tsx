@@ -4,6 +4,8 @@ import { useState, useMemo } from "react";
 import { ArrowUpDown, ArrowUp, ArrowDown, GitBranch, GitCommit } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { localeFromLanguage, t } from "@/lib/settingsI18n";
 import RunStatusBadge from "./RunStatusBadge";
 import type { PipelineRun } from "@/types";
 
@@ -22,6 +24,8 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
 }
 
 export default function PipelineRunsTable({ runs, selectedRunId, onSelectRun }: PipelineRunsTableProps) {
+  const language = useLanguagePreference();
+  const locale = localeFromLanguage(language);
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -58,26 +62,26 @@ export default function PipelineRunsTable({ runs, selectedRunId, onSelectRun }: 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Pipeline Runs</CardTitle>
+        <CardTitle className="text-base">{t(language, "pipeline.runs")}</CardTitle>
       </CardHeader>
       <CardContent className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-muted-foreground">
-              {col("id", "Run ID")}
-              {col("branch", "Branch")}
-              <th className="pb-2 font-medium">Commit</th>
-              {col("status", "Status")}
-              {col("duration", "Duration")}
-              {col("triggerType", "Trigger")}
-              {col("createdAt", "Started")}
+              {col("id", t(language, "pipeline.runId"))}
+              {col("branch", t(language, "projects.branch"))}
+              <th className="pb-2 font-medium">{t(language, "pipelines.commit")}</th>
+              {col("status", t(language, "projects.status"))}
+              {col("duration", t(language, "projects.duration"))}
+              {col("triggerType", t(language, "projects.trigger"))}
+              {col("createdAt", t(language, "pipeline.started"))}
             </tr>
           </thead>
           <tbody>
             {sorted.length === 0 ? (
               <tr>
                 <td colSpan={7} className="py-8 text-center text-muted-foreground">
-                  No pipeline runs yet.
+                  {t(language, "pipeline.none")}
                 </td>
               </tr>
             ) : (
@@ -115,7 +119,7 @@ export default function PipelineRunsTable({ runs, selectedRunId, onSelectRun }: 
                     </span>
                   </td>
                   <td className="py-2.5 text-muted-foreground text-xs whitespace-nowrap">
-                    {new Date(run.createdAt).toLocaleString()}
+                    {new Date(run.createdAt).toLocaleString(locale)}
                   </td>
                 </tr>
               ))

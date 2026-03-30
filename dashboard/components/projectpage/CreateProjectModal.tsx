@@ -5,7 +5,9 @@ import { Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import { projectApi } from "@/lib/apiClient";
+import { t } from "@/lib/settingsI18n";
 import type { CreateProjectPayload, Project } from "@/types";
 
 interface CreateProjectModalProps {
@@ -19,6 +21,7 @@ export default function CreateProjectModal({
   onClose,
   onCreated,
 }: CreateProjectModalProps) {
+  const language = useLanguagePreference();
   const [name, setName] = useState("");
   const [repoUrl, setRepoUrl] = useState("");
   const [branch, setBranch] = useState("main");
@@ -33,7 +36,7 @@ export default function CreateProjectModal({
     setError("");
 
     if (!name.trim() || !repoUrl.trim()) {
-      setError("Name and repository URL are required.");
+      setError(t(language, "projects.nameRepoRequired"));
       return;
     }
 
@@ -55,7 +58,7 @@ export default function CreateProjectModal({
       onClose();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
-      setError(axiosErr.response?.data?.message || "Failed to create project");
+      setError(axiosErr.response?.data?.message || t(language, "projects.createFailed"));
     } finally {
       setLoading(false);
     }
@@ -73,7 +76,7 @@ export default function CreateProjectModal({
       {/* Modal */}
       <div className="relative z-10 w-full max-w-lg rounded-lg border bg-card p-6 shadow-lg mx-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Create Project</h2>
+          <h2 className="text-lg font-semibold">{t(language, "projects.modalTitle")}</h2>
           <button
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground"
@@ -91,7 +94,7 @@ export default function CreateProjectModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="project-name">Project Name</Label>
+            <Label htmlFor="project-name">{t(language, "projects.projectName")}</Label>
             <Input
               id="project-name"
               placeholder="my-awesome-app"
@@ -102,7 +105,7 @@ export default function CreateProjectModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="repo-url">Repository URL</Label>
+            <Label htmlFor="repo-url">{t(language, "projects.repoUrl")}</Label>
             <Input
               id="repo-url"
               placeholder="https://github.com/org/repo"
@@ -113,7 +116,7 @@ export default function CreateProjectModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="branch">Branch</Label>
+            <Label htmlFor="branch">{t(language, "projects.branch")}</Label>
             <Input
               id="branch"
               placeholder="main"
@@ -123,7 +126,7 @@ export default function CreateProjectModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="env-setup">Environment Setup</Label>
+            <Label htmlFor="env-setup">{t(language, "projects.envSetup")}</Label>
             <Input
               id="env-setup"
               placeholder="e.g. Node 18, Docker"
@@ -134,11 +137,11 @@ export default function CreateProjectModal({
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {t(language, "hosts.cancel")}
             </Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {loading ? "Creating…" : "Create Project"}
+              {loading ? t(language, "projects.creating") : t(language, "projects.create")}
             </Button>
           </div>
         </form>

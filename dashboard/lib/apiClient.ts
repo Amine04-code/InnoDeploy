@@ -1,8 +1,10 @@
 import axios from "axios";
 
+export const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+
 // ── Axios instance with base URL from env ─────────────────
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
+  baseURL: apiBaseUrl,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -31,7 +33,7 @@ apiClient.interceptors.response.use(
       if (refreshToken) {
         try {
           const { data } = await axios.post(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+            `${apiBaseUrl}/auth/refresh`,
             { refreshToken }
           );
 
@@ -70,12 +72,30 @@ export const authApi = {
 export const projectApi = {
   getProjects: () => apiClient.get("/projects"),
 
+  getProject: (projectId: string) => apiClient.get(`/projects/${projectId}`),
+
   createProject: (payload: {
     name: string;
     repoUrl: string;
     branch: string;
     envSetup?: string;
   }) => apiClient.post("/projects", payload),
+
+  getDeploymentHistory: (projectId: string) => apiClient.get(`/projects/${projectId}/deploy/history`),
+
+  triggerDeploy: (projectId: string, payload?: { environment?: string; strategy?: string; version?: string }) =>
+    apiClient.post(`/projects/${projectId}/deploy`, payload || {}),
+
+  triggerRollback: (projectId: string, payload?: { environment?: string; version?: string }) =>
+    apiClient.post(`/projects/${projectId}/rollback`, payload || {}),
+
+  getProjectMetrics: (projectId: string, params?: Record<string, string | number>) =>
+    apiClient.get(`/projects/${projectId}/metrics`, { params }),
+
+  getProjectLogs: (projectId: string, params?: Record<string, string | number>) =>
+    apiClient.get(`/projects/${projectId}/logs`, { params }),
+
+  getProjectStatus: (projectId: string) => apiClient.get(`/projects/${projectId}/status`),
 };
 
 export const hostApi = {
@@ -99,6 +119,19 @@ export const hostApi = {
   removeHost: (hostId: string) => apiClient.delete(`/hosts/${hostId}`),
 };
 
+export const pipelineApi = {
+  triggerRun: (projectId: string, payload: { branch: string; config?: string }) =>
+    apiClient.post(`/projects/${projectId}/pipelines`, payload),
+
+  listProjectRuns: (projectId: string) => apiClient.get(`/projects/${projectId}/pipelines`),
+
+  getRun: (runId: string) => apiClient.get(`/pipelines/${runId}`),
+
+  cancelRun: (runId: string) => apiClient.post(`/pipelines/${runId}/cancel`),
+
+  getStageLog: (runId: string, stageName: string) => apiClient.get(`/pipelines/${runId}/logs/${stageName}`),
+};
+
 export const alertApi = {
   getAlerts: () => apiClient.get("/alerts"),
 
@@ -111,6 +144,9 @@ export const alertApi = {
     memoryThreshold: number;
     latencyThreshold: number;
     availabilityThreshold: number;
+    serviceDownFailures?: number;
+    diskThreshold?: number;
+    certExpiryDays?: number;
     emailNotifications: boolean;
     slackNotifications: boolean;
   }) => apiClient.put("/alerts/rules/config", payload),
@@ -142,6 +178,11 @@ export const settingsApi = {
   revokeInvitation: (invitationId: string) => apiClient.delete(`/settings/invitations/${invitationId}`),
 
   updateNotifications: (payload: {
+    emailEnabled: boolean;
+    slackEnabled: boolean;
+    discordEnabled: boolean;
+    expoEnabled: boolean;
+    webhookEnabled: boolean;
     slackWebhook: string;
     discordWebhook: string;
     smtpHost: string;
@@ -149,7 +190,20 @@ export const settingsApi = {
     smtpUsername: string;
     smtpPassword: string;
     smtpFromEmail: string;
+    emailRecipients: string[];
+    expoAccessToken: string;
+    expoPushTokens: string[];
+    webhookUrl: string;
+    webhookHeaders: Record<string, string>;
   }) => apiClient.put("/settings/notifications", payload),
+
+  testNotifications: (payload: {
+    channels?: string[];
+    severity?: "info" | "warning" | "critical";
+    title?: string;
+    message?: string;
+    serviceName?: string;
+  }) => apiClient.post("/settings/notifications/test", payload),
 
   updateDockerRegistry: (payload: {
     registryUrl: string;
@@ -174,6 +228,10 @@ export const settingsApi = {
 
   deleteOrganisation: (payload: { confirmation: string }) =>
     apiClient.delete("/settings/organisation", { data: payload }),
+};
+
+export const githubApi = {
+  listRepositories: () => apiClient.get("/github/repositories"),
 };
 
 export default apiClient;

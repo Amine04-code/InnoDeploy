@@ -3,6 +3,8 @@
 import { RotateCcw, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { t } from "@/lib/settingsI18n";
 
 interface RollbackButtonProps {
   onRollback: () => Promise<void>;
@@ -11,6 +13,7 @@ interface RollbackButtonProps {
 export default function RollbackButton({ onRollback }: RollbackButtonProps) {
   const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const language = useLanguagePreference();
 
   const handleClick = () => {
     if (!confirming) {
@@ -42,11 +45,15 @@ export default function RollbackButton({ onRollback }: RollbackButtonProps) {
         ) : (
           <RotateCcw className="h-4 w-4 mr-2" />
         )}
-        {loading ? "Rolling back…" : confirming ? "Confirm Rollback?" : "Rollback"}
+        {loading
+          ? t(language, "projectDetail.rollingBack")
+          : confirming
+            ? t(language, "projectDetail.confirmRollback")
+            : t(language, "projectDetail.rollback")}
       </Button>
       {confirming && !loading && (
         <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
-          Cancel
+          {t(language, "actions.cancel")}
         </Button>
       )}
     </div>

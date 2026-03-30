@@ -2,6 +2,8 @@
 
 import { Radio, History } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { t } from "@/lib/settingsI18n";
 
 export type LogMode = "live" | "historical";
 
@@ -11,6 +13,8 @@ interface LiveToggleProps {
 }
 
 export default function LiveToggle({ mode, onChange }: LiveToggleProps) {
+  const language = useLanguagePreference();
+
   return (
     <div className="flex items-center rounded-md border overflow-hidden">
       <button
@@ -23,7 +27,7 @@ export default function LiveToggle({ mode, onChange }: LiveToggleProps) {
         )}
       >
         <Radio className={cn("h-3.5 w-3.5", mode === "live" && "animate-pulse")} />
-        Live
+          {t(language, "logs.live")}
       </button>
       <button
         onClick={() => onChange("historical")}
@@ -35,7 +39,7 @@ export default function LiveToggle({ mode, onChange }: LiveToggleProps) {
         )}
       >
         <History className="h-3.5 w-3.5" />
-        Historical
+          {t(language, "logs.historical")}
       </button>
     </div>
   );

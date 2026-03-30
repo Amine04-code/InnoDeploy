@@ -18,6 +18,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { settingsApi } from "@/lib/apiClient";
+import { applyPreferences, persistPreferences } from "@/lib/preferences";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { roleLabel, t } from "@/lib/settingsI18n";
 import { useAuthStore } from "@/store/authStore";
 import type {
   DockerRegistrySettings,
@@ -32,6 +35,7 @@ import type {
 type SavingKey =
   | "organisation"
   | "notifications"
+  | "notificationsTest"
   | "registry"
   | "provider"
   | "preferences"
@@ -41,6 +45,7 @@ type SavingKey =
   | "danger";
 
 export default function SettingsPage() {
+  const language = useLanguagePreference();
   const isReady = useRequireAuth();
   const router = useRouter();
   const { user, clearAuth } = useAuthStore();
@@ -84,6 +89,12 @@ export default function SettingsPage() {
     if (!isReady) return;
     void loadSettings();
   }, [isReady]);
+
+  useEffect(() => {
+    if (!preferencesForm) return;
+    applyPreferences(preferencesForm);
+    persistPreferences(preferencesForm);
+  }, [preferencesForm]);
 
   if (!isReady) return null;
 
@@ -159,6 +170,25 @@ export default function SettingsPage() {
     });
   };
 
+  const handleNotificationsTest = async (channels?: string[]) => {
+    await runAction("notificationsTest", async () => {
+      const { data } = await settingsApi.testNotifications({
+        channels,
+        severity: "info",
+        title: "InnoDeploy channel test",
+        message: "This is a test notification from settings.",
+        serviceName: "settings-ui",
+      });
+
+      const channelStates = Object.entries((data.result?.channels || {}) as Record<string, { status?: string }>);
+      const summary = channelStates
+        .map(([name, state]) => `${name}:${String(state?.status || "unknown")}`)
+        .join(", ");
+
+      setSuccess(summary ? `Notification test completed (${summary})` : String(data.message ?? "Notification test completed"));
+    });
+  };
+
   const handleRegistrySave = async () => {
     if (!registryForm) return;
     await runAction("registry", async () => {
@@ -219,11 +249,11 @@ export default function SettingsPage() {
         <main className="flex-1 space-y-6 p-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-              <p className="text-sm text-muted-foreground">Configure organisation identity, access, integrations, and operator preferences.</p>
+              <h1 className="text-2xl font-semibold tracking-tight">{t(language, "settings.title")}</h1>
+              <p className="text-sm text-muted-foreground">{t(language, "settings.subtitle")}</p>
             </div>
             <Button variant="outline" onClick={() => void loadSettings()} disabled={loading}>
-              Refresh
+              {t(language, "settings.refresh")}
             </Button>
           </div>
 
@@ -231,7 +261,7 @@ export default function SettingsPage() {
           {success && <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{success}</div>}
 
           {loading || !settings || !organisationForm || !notificationsForm || !registryForm || !providerForm || !preferencesForm ? (
-            <div className="rounded-xl border bg-card px-4 py-10 text-center text-sm text-muted-foreground">Loading settings...</div>
+            <div className="rounded-xl border bg-card px-4 py-10 text-center text-sm text-muted-foreground">{t(language, "settings.loading")}</div>
           ) : (
             <>
               <div className="grid gap-4 xl:grid-cols-[1.35fr_0.9fr]">
@@ -245,14 +275,14 @@ export default function SettingsPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-xl">Workspace Controls</CardTitle>
-                    <CardDescription>Personal appearance settings and local operating defaults.</CardDescription>
+                    <CardTitle className="text-xl">{t(language, "settings.workspaceControls.title")}</CardTitle>
+                    <CardDescription>{t(language, "settings.workspaceControls.description")}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 text-sm font-medium">
                         <SlidersHorizontal className="h-4 w-4 text-primary" />
-                        Theme
+                        {t(language, "settings.theme")}
                       </div>
                       <ThemeToggle value={preferencesForm.theme} onChange={(theme) => setPreferencesForm({ ...preferencesForm, theme })} />
                     </div>
@@ -260,43 +290,47 @@ export default function SettingsPage() {
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 text-sm font-medium">
                         <Globe2 className="h-4 w-4 text-primary" />
-                        Language
+                        {t(language, "settings.language")}
                       </div>
                       <LanguagePicker value={preferencesForm.language} onChange={(language) => setPreferencesForm({ ...preferencesForm, language })} />
                     </div>
 
                     <div className="rounded-lg border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-                      Theme controls are stored per user. App-wide color-system behavior can be connected later if you want the dashboard shell to react to this preference.
+                      {t(language, "settings.preferencesHint")}
                     </div>
 
                     <div className="flex justify-end">
                       <Button onClick={() => void handlePreferencesSave()} disabled={Boolean(saving.preferences)}>
-                        {saving.preferences ? "Saving..." : "Save preferences"}
+                        {saving.preferences ? t(language, "settings.saving") : t(language, "settings.savePreferences")}
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
-              <MembersTable
-                members={settings.members}
-                invitations={settings.invitations}
-                canManage={canManage}
-                currentUserId={user?.id}
-                onInvite={handleInvite}
-                onRoleChange={handleMemberRoleChange}
-                onRemove={handleRemoveMember}
-                onRevokeInvitation={handleRevokeInvitation}
-                busyMemberId={busyMemberId}
-                inviting={Boolean(saving.invite)}
-              />
+              <div id="members">
+                <MembersTable
+                  members={settings.members}
+                  invitations={settings.invitations}
+                  canManage={canManage}
+                  currentUserId={user?.id}
+                  onInvite={handleInvite}
+                  onRoleChange={handleMemberRoleChange}
+                  onRemove={handleRemoveMember}
+                  onRevokeInvitation={handleRevokeInvitation}
+                  busyMemberId={busyMemberId}
+                  inviting={Boolean(saving.invite)}
+                />
+              </div>
 
               <div className="grid gap-4 xl:grid-cols-2">
                 <NotificationChannels
                   value={notificationsForm}
                   onChange={setNotificationsForm}
                   onSubmit={handleNotificationsSave}
+                  onTest={handleNotificationsTest}
                   saving={Boolean(saving.notifications)}
+                  testing={Boolean(saving.notificationsTest)}
                   disabled={!canManage}
                 />
                 <DockerRegistryConfig
@@ -319,19 +353,19 @@ export default function SettingsPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-xl">Access Posture</CardTitle>
-                    <CardDescription>Current role and platform guardrails for this workspace.</CardDescription>
+                    <CardTitle className="text-xl">{t(language, "accessPosture.title")}</CardTitle>
+                    <CardDescription>{t(language, "accessPosture.description")}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4 text-sm">
                     <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
                       <ShieldCheck className="h-5 w-5 text-primary" />
                       <div>
-                        <div className="font-medium capitalize">Your role: {user?.role ?? "unknown"}</div>
-                        <div className="text-muted-foreground">Owners can delete the organisation. Owners and admins can manage members, integrations, and API keys.</div>
+                        <div className="font-medium capitalize">{t(language, "accessPosture.yourRole", { role: user?.role ? roleLabel(language, user.role as MemberRole) : "unknown" })}</div>
+                        <div className="text-muted-foreground">{t(language, "accessPosture.hint")}</div>
                       </div>
                     </div>
                     <div className="rounded-lg border px-4 py-3 text-muted-foreground">
-                      Git provider, Docker registry, and outbound notification credentials are organisation-scoped and currently stored directly in MongoDB for this workspace.
+                      {t(language, "accessPosture.storage")}
                     </div>
                   </CardContent>
                 </Card>
