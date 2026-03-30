@@ -4,6 +4,10 @@ const stepSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     command: { type: String, required: true },
+    image: { type: String, default: "node:20-alpine", trim: true },
+    retries: { type: Number, default: 0, min: 0 },
+    timeoutMs: { type: Number, default: 10 * 60 * 1000, min: 1000 },
+    attempt: { type: Number, default: 0, min: 0 },
     status: {
       type: String,
       enum: ["pending", "running", "success", "failed", "skipped"],

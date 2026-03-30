@@ -4,10 +4,15 @@ require("dotenv").config({ path: ".env.local", override: true });
 const app = require("./app");
 const connectDB = require("./config/db");
 const { connectRedis } = require("./config/redis");
+<<<<<<< HEAD
 const { startDeployWorker } = require("./services/deployWorker");
 const { startLogCollector } = require("./services/logCollector");
 const { startMonitorWorker } = require("./services/monitorWorker");
 const { startPipelineRunner } = require("./services/pipelineRunner");
+=======
+const { startPipelineRunner } = require("./services/pipelineRunner");
+const { startDeployWorker } = require("./services/deployWorker");
+>>>>>>> feat/backend-deployment-engine
 
 const PORT = process.env.PORT || 5000;
 

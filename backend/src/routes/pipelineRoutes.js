@@ -7,6 +7,7 @@ const {
   getPipelineRun,
   cancelPipelineRun,
   getStageLog,
+  streamPipelineRun,
 } = require("../controllers/pipelineController");
 
 const router = express.Router();
@@ -16,5 +17,6 @@ router.get("/projects/:id/pipelines", authMiddleware, listProjectPipelineRuns);
 router.get("/pipelines/:runId", authMiddleware, getPipelineRun);
 router.post("/pipelines/:runId/cancel", authMiddleware, requireRole("owner", "admin", "developer"), cancelPipelineRun);
 router.get("/pipelines/:runId/logs/:stage", authMiddleware, getStageLog);
+router.get("/pipelines/:runId/stream", authMiddleware, streamPipelineRun);
 
 module.exports = router;
