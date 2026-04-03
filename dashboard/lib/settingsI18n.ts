@@ -606,6 +606,16 @@ messages["nav.settings"] = {
   french: "Parametres",
   arabic: "الاعدادات",
 };
+messages["nav.monitoring"] = {
+  english: "Monitoring",
+  french: "Surveillance",
+  arabic: "المراقبة",
+};
+messages["nav.logs"] = {
+  english: "Logs",
+  french: "Journaux",
+  arabic: "السجلات",
+};
 messages["navbar.dashboard"] = {
   english: "Dashboard",
   french: "Tableau de bord",

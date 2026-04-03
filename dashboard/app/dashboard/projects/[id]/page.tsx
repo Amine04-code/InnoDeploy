@@ -152,6 +152,14 @@ export default function ProjectDetailPage() {
   const [latencyPoints, setLatencyPoints] = useState<Array<{ time: string; latencyMs: number }>>([]);
   const [networkPoints, setNetworkPoints] = useState<Array<{ time: string; inKbPerSec: number; outKbPerSec: number }>>([]);
 
+  // Setup mode state
+  const [setupMode, setSetupMode] = useState<'automatic' | 'manual'>('automatic');
+  const [installCommand, setInstallCommand] = useState('');
+  const [buildCommand, setBuildCommand] = useState('');
+  const [startCommand, setStartCommand] = useState('');
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
+
   useEffect(() => {
     const requestedTab = String(searchParams.get("tab") || "");
     const requestedMode = String(searchParams.get("mode") || "");
@@ -235,6 +243,13 @@ export default function ProjectDetailPage() {
 
         setProject(mappedProject);
         setActiveEnvId((prev) => prev || mappedProject.environments[0]?.id || "");
+
+        // Populate setup mode state from project data
+        setSetupMode(projectData.setupMode || 'automatic');
+        setPipelineConfig(projectData.pipelineConfig || '');
+        setInstallCommand(projectData.installCommand || '');
+        setBuildCommand(projectData.buildCommand || '');
+        setStartCommand(projectData.startCommand || '');
 
         const metrics = Array.isArray(metricsRes.data?.metrics) ? metricsRes.data.metrics : [];
         const sortedMetrics = [...metrics].sort(
@@ -684,6 +699,27 @@ export default function ProjectDetailPage() {
     await handleTriggerPipeline(run.branch);
   };
 
+  const handleSaveSetup = async () => {
+    try {
+      setSettingsSaving(true);
+      setSettingsSuccess(null);
+      await projectApi.updateProject(_projectId, {
+        setupMode,
+        pipelineConfig: setupMode === 'manual' ? pipelineConfig : undefined,
+        installCommand: setupMode === 'automatic' ? installCommand : undefined,
+        buildCommand: setupMode === 'automatic' ? buildCommand : undefined,
+        startCommand: setupMode === 'automatic' ? startCommand : undefined,
+      });
+      setSettingsSuccess('Pipeline configuration saved successfully.');
+      setTimeout(() => setSettingsSuccess(null), 3000);
+    } catch (error: unknown) {
+      const axiosErr = error as { response?: { data?: { message?: string } } };
+      setPipelineError(axiosErr.response?.data?.message || 'Failed to save pipeline configuration.');
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
   const handleAddSecret = (key: string, value: string) => {
     setSecrets((prev) => [...prev, { id: `s_${Date.now()}`, key, value }]);
   };
@@ -914,12 +950,119 @@ export default function ProjectDetailPage() {
           )}
 
           {activeTab === "Settings" && (
-            <SecretsList
-              secrets={secrets}
-              onAdd={handleAddSecret}
-              onEdit={handleEditSecret}
-              onDelete={handleDeleteSecret}
-            />
+            <div className="space-y-6">
+              {/* Pipeline Setup Mode */}
+              <div className="rounded-lg border bg-card p-5 space-y-4">
+                <div>
+                  <h2 className="text-base font-semibold">Pipeline Setup</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Choose how your project builds and deploys.
+                  </p>
+                </div>
+
+                {/* Mode Toggle */}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSetupMode('automatic')}
+                    className={`flex-1 rounded-lg border-2 p-4 text-left transition ${
+                      setupMode === 'automatic'
+                        ? 'border-emerald-500 bg-emerald-500/10'
+                        : 'border-border hover:border-muted-foreground/40'
+                    }`}
+                  >
+                    <p className="font-semibold text-sm">Automatic</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      InnoDeploy detects your framework and runs default build commands. You can optionally customize install, build, and start commands.
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSetupMode('manual')}
+                    className={`flex-1 rounded-lg border-2 p-4 text-left transition ${
+                      setupMode === 'manual'
+                        ? 'border-cyan-500 bg-cyan-500/10'
+                        : 'border-border hover:border-muted-foreground/40'
+                    }`}
+                  >
+                    <p className="font-semibold text-sm">Manual</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Define your own pipeline stages using a YAML configuration (.innodeploy.yml format).
+                    </p>
+                  </button>
+                </div>
+
+                {/* Automatic Mode: Build Commands */}
+                {setupMode === 'automatic' && (
+                  <div className="space-y-3 pt-2">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Install Command</label>
+                      <input
+                        type="text"
+                        value={installCommand}
+                        onChange={(e) => setInstallCommand(e.target.value)}
+                        placeholder="npm install"
+                        className="w-full rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Build Command</label>
+                      <input
+                        type="text"
+                        value={buildCommand}
+                        onChange={(e) => setBuildCommand(e.target.value)}
+                        placeholder="npm run build"
+                        className="w-full rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Start Command</label>
+                      <input
+                        type="text"
+                        value={startCommand}
+                        onChange={(e) => setStartCommand(e.target.value)}
+                        placeholder="npm start"
+                        className="w-full rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Manual Mode: YAML Editor */}
+                {setupMode === 'manual' && (
+                  <div className="pt-2">
+                    <PipelineConfigEditor
+                      config={pipelineConfig}
+                      readOnly={false}
+                      onChange={(val) => setPipelineConfig(val)}
+                    />
+                  </div>
+                )}
+
+                {/* Save Button */}
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveSetup}
+                    disabled={settingsSaving}
+                    className="inline-flex h-9 items-center justify-center rounded-md bg-emerald-500 px-5 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:opacity-60"
+                  >
+                    {settingsSaving ? 'Saving...' : 'Save Pipeline Configuration'}
+                  </button>
+                  {settingsSuccess && (
+                    <span className="text-sm text-emerald-400">{settingsSuccess}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Secrets Section */}
+              <SecretsList
+                secrets={secrets}
+                onAdd={handleAddSecret}
+                onEdit={handleEditSecret}
+                onDelete={handleDeleteSecret}
+              />
+            </div>
           )}
         </main>
       </div>

@@ -58,6 +58,33 @@ const projectSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // Pipeline setup mode: 'automatic' (default) or 'manual'
+    setupMode: {
+      type: String,
+      enum: ['automatic', 'manual'],
+      default: 'automatic',
+    },
+    // Manual mode: inline .innodeploy.yml content
+    pipelineConfig: {
+      type: String,
+      default: '',
+    },
+    // Automatic mode: customizable commands (optional overrides)
+    installCommand: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    buildCommand: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    startCommand: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     environments: [environmentSchema],
     organisationId: {
       type: mongoose.Schema.Types.ObjectId,

@@ -40,6 +40,13 @@ export default function DeployWebApplicationView() {
   const [creatingRepoId, setCreatingRepoId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Setup configuration step
+  const [selectedRepo, setSelectedRepo] = useState<GithubRepository | null>(null);
+  const [setupMode, setSetupMode] = useState<'automatic' | 'manual'>('automatic');
+  const [installCommand, setInstallCommand] = useState('');
+  const [buildCommand, setBuildCommand] = useState('');
+  const [startCommand, setStartCommand] = useState('');
+
   useEffect(() => {
     let mounted = true;
 
@@ -102,13 +109,28 @@ export default function DeployWebApplicationView() {
   };
 
   const handleSelectRepository = async (repo: GithubRepository) => {
-    setCreatingRepoId(repo.id);
+    setSelectedRepo(repo);
+    setError("");
+  };
+
+  const handleBackToRepos = () => {
+    setSelectedRepo(null);
+    setError("");
+  };
+
+  const handleCreateProject = async () => {
+    if (!selectedRepo) return;
+    setCreatingRepoId(selectedRepo.id);
     setError("");
     try {
       await projectApi.createProject({
-        name: repo.name,
-        repoUrl: repo.cloneUrl,
-        branch: repo.defaultBranch || "main",
+        name: selectedRepo.name,
+        repoUrl: selectedRepo.cloneUrl,
+        branch: selectedRepo.defaultBranch || "main",
+        setupMode,
+        installCommand: setupMode === 'automatic' ? installCommand : undefined,
+        buildCommand: setupMode === 'automatic' ? buildCommand : undefined,
+        startCommand: setupMode === 'automatic' ? startCommand : undefined,
       });
       router.push("/dashboard/projects");
     } catch (err: unknown) {
@@ -143,6 +165,131 @@ export default function DeployWebApplicationView() {
           Easily deploy a new web application from your source code by selecting an existing GitHub repository.
         </p>
 
+        {/* Step 2: Setup Configuration (shown after repo selection) */}
+        {selectedRepo && (
+          <article className="mt-6 overflow-hidden rounded-xl border border-cyan-300/20 bg-[#071b36]/80 shadow-[inset_0_1px_0_rgba(148,163,184,0.08),0_20px_35px_rgba(2,8,24,0.25)]">
+            <header className="flex items-center gap-3 border-b border-slate-200/10 px-4 py-3">
+              <button
+                type="button"
+                onClick={handleBackToRepos}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-cyan-300/12 text-cyan-200 hover:bg-cyan-300/20 transition"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+              <div>
+                <h2 className="text-xl font-semibold text-slate-50">Configure Project</h2>
+                <p className="text-xs text-slate-400">{selectedRepo.fullName}</p>
+              </div>
+            </header>
+
+            <div className="px-5 py-5 space-y-5">
+              {/* Setup Mode Toggle */}
+              <div>
+                <p className="text-sm font-medium text-slate-200 mb-3">Pipeline Setup Mode</p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSetupMode('automatic')}
+                    className={`flex-1 rounded-lg border-2 p-4 text-left transition ${
+                      setupMode === 'automatic'
+                        ? 'border-emerald-500 bg-emerald-500/10'
+                        : 'border-slate-600/40 hover:border-slate-500/60'
+                    }`}
+                  >
+                    <p className="font-semibold text-sm text-slate-100">Automatic</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Auto-detect and run. Optionally customize install, build, and start commands.
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSetupMode('manual')}
+                    className={`flex-1 rounded-lg border-2 p-4 text-left transition ${
+                      setupMode === 'manual'
+                        ? 'border-cyan-500 bg-cyan-500/10'
+                        : 'border-slate-600/40 hover:border-slate-500/60'
+                    }`}
+                  >
+                    <p className="font-semibold text-sm text-slate-100">Manual</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Define custom pipeline stages via .innodeploy.yml in your repo.
+                    </p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Automatic Mode: Optional Build Commands */}
+              {setupMode === 'automatic' && (
+                <div className="space-y-3">
+                  <p className="text-xs text-slate-400">
+                    Leave blank to use defaults (npm install / npm run build / npm start).
+                  </p>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Install Command</label>
+                    <input
+                      type="text"
+                      value={installCommand}
+                      onChange={(e) => setInstallCommand(e.target.value)}
+                      placeholder="npm install"
+                      className="w-full rounded-md border border-slate-600/50 bg-[#091d3b] px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-emerald-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Build Command</label>
+                    <input
+                      type="text"
+                      value={buildCommand}
+                      onChange={(e) => setBuildCommand(e.target.value)}
+                      placeholder="npm run build"
+                      className="w-full rounded-md border border-slate-600/50 bg-[#091d3b] px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-emerald-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Start Command</label>
+                    <input
+                      type="text"
+                      value={startCommand}
+                      onChange={(e) => setStartCommand(e.target.value)}
+                      placeholder="npm start"
+                      className="w-full rounded-md border border-slate-600/50 bg-[#091d3b] px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-emerald-400"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Manual Mode Info */}
+              {setupMode === 'manual' && (
+                <div className="rounded-md border border-cyan-300/20 bg-cyan-300/5 px-4 py-3">
+                  <p className="text-sm text-cyan-200 flex items-start gap-2">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                    Place an <code className="font-mono text-cyan-100 bg-cyan-300/10 px-1 rounded">.innodeploy.yml</code> file in your repo root, or configure it later in project settings.
+                  </p>
+                </div>
+              )}
+
+              {error && <p className="text-sm text-rose-300">{error}</p>}
+
+              <button
+                type="button"
+                disabled={creatingRepoId === selectedRepo.id}
+                onClick={() => void handleCreateProject()}
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-emerald-500 px-5 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {creatingRepoId === selectedRepo.id ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Creating Project...
+                  </>
+                ) : (
+                  'Create & Deploy Project'
+                )}
+              </button>
+            </div>
+          </article>
+        )}
+
+        {/* Step 1: Repository Selection (hidden when configuring) */}
+        {!selectedRepo && (
         <article className="mt-6 overflow-hidden rounded-xl border border-cyan-300/20 bg-[#071b36]/80 shadow-[inset_0_1px_0_rgba(148,163,184,0.08),0_20px_35px_rgba(2,8,24,0.25)]">
           <header className="flex flex-col gap-3 border-b border-slate-200/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
@@ -241,6 +388,7 @@ export default function DeployWebApplicationView() {
             </div>
           )}
         </article>
+        )}
       </section>
     </main>
   );

@@ -62,6 +62,11 @@ const mapProject = (project) => ({
   status: project.status,
   lastDeployAt: project.lastDeployAt,
   envCount: project.envCount,
+  setupMode: project.setupMode || 'automatic',
+  pipelineConfig: project.pipelineConfig || '',
+  installCommand: project.installCommand || '',
+  buildCommand: project.buildCommand || '',
+  startCommand: project.startCommand || '',
   createdAt: project.createdAt,
   updatedAt: project.updatedAt,
 });
@@ -122,7 +127,7 @@ const createProject = async (req, res, next) => {
       return res.status(403).json({ message: limitCheck.message });
     }
 
-    const { name, repoUrl, branch = "main", description = "", envCount = 0 } = req.body;
+    const { name, repoUrl, branch = "main", description = "", envCount = 0, setupMode, pipelineConfig, installCommand, buildCommand, startCommand } = req.body;
     if (!name || !repoUrl) {
       return res.status(400).json({ message: "name and repoUrl are required" });
     }
@@ -133,6 +138,9 @@ const createProject = async (req, res, next) => {
       return res.status(409).json({ message: "A project with this name already exists" });
     }
 
+    const validModes = ['automatic', 'manual'];
+    const resolvedMode = validModes.includes(setupMode) ? setupMode : 'automatic';
+
     const project = await Project.create({
       name: normalizedName,
       repoUrl: String(repoUrl).trim(),
@@ -140,6 +148,11 @@ const createProject = async (req, res, next) => {
       description: String(description).trim(),
       status: "stopped",
       envCount: Number(envCount) || 0,
+      setupMode: resolvedMode,
+      pipelineConfig: resolvedMode === 'manual' ? String(pipelineConfig || '') : '',
+      installCommand: String(installCommand || '').trim(),
+      buildCommand: String(buildCommand || '').trim(),
+      startCommand: String(startCommand || '').trim(),
       organisationId,
       createdBy: req.user.id,
     });
@@ -220,6 +233,27 @@ const updateProject = async (req, res, next) => {
         }
         project.lastDeployAt = parsedDate;
       }
+    }
+
+    const { setupMode, pipelineConfig, installCommand, buildCommand, startCommand } = req.body;
+    if (setupMode !== undefined) {
+      const validModes = ['automatic', 'manual'];
+      if (!validModes.includes(setupMode)) {
+        return res.status(400).json({ message: "setupMode must be 'automatic' or 'manual'" });
+      }
+      project.setupMode = setupMode;
+    }
+    if (pipelineConfig !== undefined) {
+      project.pipelineConfig = String(pipelineConfig);
+    }
+    if (installCommand !== undefined) {
+      project.installCommand = String(installCommand).trim();
+    }
+    if (buildCommand !== undefined) {
+      project.buildCommand = String(buildCommand).trim();
+    }
+    if (startCommand !== undefined) {
+      project.startCommand = String(startCommand).trim();
     }
 
     await project.save();

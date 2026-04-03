@@ -78,7 +78,16 @@ const triggerPipelineRun = async (req, res, next) => {
     }
 
     let parsedConfig = null;
-    if (req.body.config !== undefined && req.body.config !== null && String(req.body.config).trim() !== "") {
+    const isManualMode = project.setupMode === 'manual';
+
+    // In manual mode, use project's stored pipeline config or inline config from request
+    // In automatic mode, build steps from project's commands or use defaults
+    const inlineConfig = req.body.config !== undefined && req.body.config !== null
+      ? String(req.body.config).trim()
+      : '';
+    const configSource = inlineConfig || (isManualMode ? (project.pipelineConfig || '') : '');
+
+    if (configSource) {
       try {
         parsedConfig = parseInnoDeployConfig(req.body.config);
       } catch (error) {
@@ -99,9 +108,28 @@ const triggerPipelineRun = async (req, res, next) => {
 
     const configSteps = parsedConfig ? buildStepsFromConfig(parsedConfig) : [];
     const requestSteps = Array.isArray(req.body.steps) && req.body.steps.length > 0 ? req.body.steps : [];
-    const selectedSteps = requestSteps.length > 0
-      ? requestSteps.map(normalizeStep).filter((step) => step.command)
-      : (configSteps.length > 0 ? configSteps.map(normalizeStep) : getDefaultSteps());
+
+    let selectedSteps;
+    if (requestSteps.length > 0) {
+      selectedSteps = requestSteps.map(normalizeStep).filter((step) => step.command);
+    } else if (configSteps.length > 0) {
+      selectedSteps = configSteps.map(normalizeStep);
+    } else if (!isManualMode) {
+      // Automatic mode: build steps from project's custom commands or use defaults
+      const autoSteps = [];
+      if (project.installCommand) {
+        autoSteps.push(normalizeStep({ name: "install", command: project.installCommand }));
+      }
+      if (project.buildCommand) {
+        autoSteps.push(normalizeStep({ name: "build", command: project.buildCommand }));
+      }
+      if (project.startCommand) {
+        autoSteps.push(normalizeStep({ name: "start", command: project.startCommand }));
+      }
+      selectedSteps = autoSteps.length > 0 ? autoSteps : getDefaultSteps();
+    } else {
+      selectedSteps = getDefaultSteps();
+    }
 
     const run = await Pipeline.create({
       projectId: project._id,

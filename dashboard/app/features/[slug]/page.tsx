@@ -1,4 +1,5 @@
-import FeatureDetailPage, { getAllFeatureSlugs } from "@/components/featurespage/FeatureDetailPage";
+import FeatureDetailPage from "@/components/featurespage/FeatureDetailPage";
+import { getAllFeatureSlugs } from "@/lib/features";
 import { notFound } from "next/navigation";
 
 export function generateStaticParams() {

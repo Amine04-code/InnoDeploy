@@ -27,6 +27,11 @@ export interface Project {
   status: ProjectStatus;
   lastDeployAt: string | null;
   envCount: number;
+  setupMode: 'automatic' | 'manual';
+  pipelineConfig: string;
+  installCommand: string;
+  buildCommand: string;
+  startCommand: string;
   createdAt: string;
 }
 
@@ -36,6 +41,11 @@ export interface CreateProjectPayload {
   repoUrl: string;
   branch: string;
   envSetup?: string;
+  setupMode?: 'automatic' | 'manual';
+  pipelineConfig?: string;
+  installCommand?: string;
+  buildCommand?: string;
+  startCommand?: string;
 }
 
 /** Deploy strategy */

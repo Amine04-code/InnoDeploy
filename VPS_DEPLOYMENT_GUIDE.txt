@@ -1,0 +1,139 @@
+# InnoDeploy VPS Deployment Guide
+
+## 1. DNS Records
+Create these A records in your domain registrar (Cloudflare, Namecheap, etc):
+
+    inverp.cloud        A   76.76.7.48
+    api.inverp.cloud    A   76.76.7.48
+    ws.inverp.cloud     A   76.76.7.48
+
+---
+
+## 2. Install Docker on VPS
+SSH into your VPS:
+
+    ssh root@76.76.7.48
+
+Then run:
+
+    apt-get update
+    apt-get install -y ca-certificates curl gnupg lsb-release
+    install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    chmod a+r /etc/apt/keyrings/docker.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+    apt-get update
+    apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+    ufw allow 22/tcp
+
+---
+
+## 3. Upload the Project
+From your local machine:
+
+    scp -r ./InnoDeploy root@76.76.7.48:/opt/innodeploy
+
+Or (if you have rsync):
+
+    rsync -az --exclude 'node_modules' --exclude '.next' --exclude '.git' --exclude 'test-results' ./InnoDeploy/ root@76.76.7.48:/opt/innodeploy/
+
+---
+
+## 4. Patch dashboard/Dockerfile
+Edit `/opt/innodeploy/dashboard/Dockerfile` on the VPS. Before `RUN npm run build` in the builder stage, add:
+
+    ARG NEXT_PUBLIC_API_URL
+    ARG NEXT_PUBLIC_WS_URL
+    ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+    ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+
+---
+
+## 5. Create backend/.env
+Edit `/opt/innodeploy/backend/.env`:
+
+    PORT=5000
+    MONGO_URI=mongodb://mongodb:27017/innodeploy
+    REDIS_URL=redis://redis:6379
+    JWT_SECRET=REPLACE_WITH_openssl_rand_-hex_32
+    JWT_REFRESH_SECRET=REPLACE_WITH_openssl_rand_-hex_32
+    CLIENT_URL=https://inverp.cloud
+    API_BASE_URL=https://api.inverp.cloud/api
+    OAUTH_REDIRECT_URL=https://inverp.cloud/auth/callback
+    GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID
+    GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET
+    GOOGLE_CALLBACK_URL=https://api.inverp.cloud/api/auth/google/callback
+    GITHUB_CLIENT_ID=YOUR_GITHUB_CLIENT_ID
+    GITHUB_CLIENT_SECRET=YOUR_GITHUB_CLIENT_SECRET
+    GITHUB_CALLBACK_URL=https://api.inverp.cloud/api/auth/github/callback
+    ENCRYPTION_KEY=REPLACE_WITH_openssl_rand_-hex_32
+    MINIO_ENDPOINT=minio
+    MINIO_PORT=9000
+    MINIO_ACCESS_KEY=minioadmin
+    MINIO_SECRET_KEY=REPLACE_WITH_STRONG_PASSWORD
+    MINIO_BUCKET=innodeploy-artifacts
+    MINIO_USE_SSL=false
+    WS_PORT=7070
+    WS_PATH=/ws
+    NODE_ENV=production
+
+Generate secrets with:
+
+    openssl rand -hex 32   # For JWT_SECRET, JWT_REFRESH_SECRET, ENCRYPTION_KEY
+    openssl rand -base64 24  # For MINIO_SECRET_KEY
+
+---
+
+## 6. Create dashboard/.env.production
+Edit `/opt/innodeploy/dashboard/.env.production`:
+
+    NEXT_PUBLIC_API_URL=https://api.inverp.cloud/api
+    NEXT_PUBLIC_WS_URL=wss://ws.inverp.cloud
+
+---
+
+## 7. Create docker-compose.override.yml
+Edit `/opt/innodeploy/docker/docker-compose.override.yml`:
+
+    services:
+      dashboard:
+        build:
+          args:
+            NEXT_PUBLIC_API_URL: https://api.inverp.cloud/api
+            NEXT_PUBLIC_WS_URL: wss://ws.inverp.cloud
+      minio:
+        environment:
+          MINIO_ROOT_PASSWORD: SAME_PASSWORD_AS_BACKEND_ENV
+
+---
+
+## 8. Build and Launch
+
+    cd /opt/innodeploy/docker
+    export TRAEFIK_ACME_EMAIL="admin@inverp.cloud"
+    export TRAEFIK_API_HOST="api.inverp.cloud"
+    export TRAEFIK_WS_HOST="ws.inverp.cloud"
+    export TRAEFIK_APP_HOST="inverp.cloud"
+    export TRAEFIK_DASHBOARD_ENABLED=false
+    export TRAEFIK_LOG_LEVEL=WARN
+    docker compose up -d --build
+
+---
+
+## 9. Update OAuth Redirect URIs
+- Google: https://api.inverp.cloud/api/auth/google/callback
+- GitHub: https://api.inverp.cloud/api/auth/github/callback
+
+---
+
+## 10. Troubleshooting
+- Logs: `docker compose logs -f`
+- Service status: `docker compose ps`
+- Rebuild: `docker compose up -d --build dashboard`
+- Restart: `docker compose down && docker compose up -d --build`
+
+---
+
+Your app will be live at https://inverp.cloud once DNS and SSL are ready.

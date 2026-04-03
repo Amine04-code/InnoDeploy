@@ -1,0 +1,30 @@
+\babel@toc {english}{}\relax 
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Global Use Case Diagram}}{9}{figure.caption.4}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {4.1}{\ignorespaces Global System Architecture}}{12}{figure.caption.7}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Backend Layered Architecture}}{14}{figure.caption.9}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Frontend Component Architecture}}{14}{figure.caption.10}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces Real-Time Communication via Redis Pub/Sub}}{15}{figure.caption.11}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {5.1}{\ignorespaces Complete UML Class Diagram}}{17}{figure.caption.12}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {6.1}{\ignorespaces Login Authentication Sequence Diagram}}{19}{figure.caption.14}%
+\contentsline {figure}{\numberline {6.2}{\ignorespaces Pipeline Execution Sequence Diagram}}{20}{figure.caption.15}%
+\contentsline {figure}{\numberline {6.3}{\ignorespaces Deployment Execution Sequence Diagram}}{21}{figure.caption.16}%
+\contentsline {figure}{\numberline {6.4}{\ignorespaces Webhook-Triggered Pipeline Sequence Diagram}}{22}{figure.caption.17}%
+\contentsline {figure}{\numberline {6.5}{\ignorespaces Token Refresh Sequence Diagram}}{22}{figure.caption.18}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {8.1}{\ignorespaces Login Page -- Email/Password and OAuth Authentication}}{30}{figure.caption.19}%
+\contentsline {figure}{\numberline {8.2}{\ignorespaces Registration Page -- Account Creation with Organisation}}{31}{figure.caption.20}%
+\contentsline {figure}{\numberline {8.3}{\ignorespaces Projects Page -- Project List with Status}}{32}{figure.caption.21}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {9.1}{\ignorespaces UML Deployment Diagram}}{34}{figure.caption.23}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {10.1}{\ignorespaces Testing Pyramid}}{38}{figure.caption.27}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }

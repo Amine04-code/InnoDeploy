@@ -239,13 +239,30 @@ const createPipelineFromJob = async (job) => {
     throw new Error("pipeline job missing a valid projectId");
   }
 
-  const steps = Array.isArray(job.steps) && job.steps.length > 0
-    ? job.steps
-    : [
-        { name: "Install", command: "echo install" },
-        { name: "Test", command: "echo test" },
-        { name: "Build", command: "echo build" },
-      ];
+  // Look up the project to check setupMode and custom commands
+  const project = await Project.findById(job.projectId);
+
+  let steps;
+  if (Array.isArray(job.steps) && job.steps.length > 0) {
+    steps = job.steps;
+  } else if (project && project.setupMode === 'automatic') {
+    // Build steps from project's custom commands if available
+    const autoSteps = [];
+    if (project.installCommand) autoSteps.push({ name: "Install", command: project.installCommand });
+    if (project.buildCommand) autoSteps.push({ name: "Build", command: project.buildCommand });
+    if (project.startCommand) autoSteps.push({ name: "Start", command: project.startCommand });
+    steps = autoSteps.length > 0 ? autoSteps : [
+      { name: "Install", command: "echo install" },
+      { name: "Test", command: "echo test" },
+      { name: "Build", command: "echo build" },
+    ];
+  } else {
+    steps = [
+      { name: "Install", command: "echo install" },
+      { name: "Test", command: "echo test" },
+      { name: "Build", command: "echo build" },
+    ];
+  }
 
   return Pipeline.create({
     projectId: job.projectId,

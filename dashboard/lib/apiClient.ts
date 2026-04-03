@@ -83,7 +83,15 @@ export const projectApi = {
     repoUrl: string;
     branch: string;
     envSetup?: string;
+    setupMode?: string;
+    pipelineConfig?: string;
+    installCommand?: string;
+    buildCommand?: string;
+    startCommand?: string;
   }) => apiClient.post("/projects", payload),
+
+  updateProject: (projectId: string, payload: Record<string, unknown>) =>
+    apiClient.put(`/projects/${projectId}`, payload),
 
   getDeploymentHistory: (projectId: string) => apiClient.get(`/projects/${projectId}/deploy/history`),
 
