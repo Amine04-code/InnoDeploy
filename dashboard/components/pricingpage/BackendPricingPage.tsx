@@ -2,29 +2,35 @@ import Link from "next/link";
 import {
   Activity,
   ArrowRight,
-  Bell,
   BookOpen,
   Bot,
   Boxes,
   Braces,
+  BriefcaseBusiness,
   Check,
   ChevronDown,
-  CloudLightning,
   CircleHelp,
-  Database,
+  Clock,
+  Eye,
+  FileCode2,
+  GitBranch,
+  GitPullRequest,
   Globe,
   GraduationCap,
-  HardDrive,
   Headset,
-  LockKeyhole,
+  Layers,
+  Lock,
   Monitor,
-  Radio,
+  Newspaper,
+  Rocket,
   Server,
   Shield,
   ShieldCheck,
+  Terminal,
   Ticket,
   UserRound,
   Users,
+  Zap,
 } from "lucide-react";
 
 type Plan = {
@@ -87,23 +93,23 @@ const navItems = [
     href: "/#product",
     columns: [
       {
-        title: "Backend as a Service",
+        title: "Deploy & Operate",
         items: [
-          { title: "Database", description: "Store and stack relational data in real-time, globally.", icon: Database },
-          { title: "Real-time", description: "Track database changes and user presence in real-time.", icon: Radio },
-          { title: "Cloud Functions", description: "Add Server-side business logic using cloud code functions.", icon: CloudLightning },
-          { title: "GraphQL, Rest APIs & SDKs", description: "We speak your language.", icon: Braces },
-          { title: "File Storage", description: "Easy, secure cloud file storage and delivery.", icon: HardDrive },
-          { title: "Authentication", description: "Complete user management system.", icon: LockKeyhole },
-          { title: "Notifications", description: "Validate, engage, communicate with users using notifications.", icon: Bell },
+          { title: "Git Push to Deploy", description: "Connect your repo and ship on every push — zero config required.", icon: GitBranch, href: "/features/git-push-to-deploy" },
+          { title: "Preview Deployments", description: "Every pull request gets its own live URL for instant review.", icon: Eye, href: "/features/preview-deployments" },
+          { title: "Instant Rollbacks", description: "Roll back to any previous deployment with a single click.", icon: Clock, href: "/features/instant-rollbacks" },
+          { title: "Auto-Scaling", description: "Containers scale horizontally based on real-time traffic load.", icon: Layers, href: "/features/auto-scaling" },
+          { title: "Edge Network", description: "Deploy to 50+ global edge regions for sub-200ms latency.", icon: Globe, href: "/features/edge-network" },
         ],
       },
       {
-        title: "Web Deployment",
+        title: "Developer Experience",
         items: [
-          { title: "Web Deployment", description: "Deploy full-stack web applications directly from GitHub.", icon: Boxes },
-          { title: "AI Agent", description: "Instantly turn ideas into fully provisioned, production-ready apps.", icon: Bot },
-          { title: "MCP", description: "Model Context Protocol integration.", icon: Braces },
+          { title: "Real-time Monitoring", description: "Live CPU, memory, bandwidth dashboards and intelligent alerts.", icon: Activity, href: "/features/real-time-monitoring" },
+          { title: "Build Logs & Insights", description: "Stream build and runtime logs with full-text search and filters.", icon: Terminal, href: "/features/build-logs" },
+          { title: "Secrets & Env Vars", description: "Encrypted environment variables with per-branch overrides.", icon: Lock, href: "/features/secrets-env-vars" },
+          { title: "Custom Domains & SSL", description: "Free TLS certificates and one-click custom domain routing.", icon: Shield, href: "/features/custom-domains-ssl" },
+          { title: "AI Deploy Agent", description: "Describe your app in plain language — the agent provisions everything.", icon: Bot, href: "/features/ai-deploy-agent" },
         ],
       },
     ],
@@ -113,19 +119,21 @@ const navItems = [
     href: "/docs",
     columns: [
       {
-        title: "Backend Platform",
+        title: "Learn",
         items: [
-          { title: "Guides", description: "Step-by-step workflows for using your backend.", icon: BookOpen },
-          { title: "API Reference", description: "Examples and generated docs from APIs and SDKs.", icon: Braces },
-          { title: "App Templates", description: "Example apps and starter projects.", icon: Boxes },
+          { title: "Quick Start", description: "Go from zero to deployed in under 5 minutes.", icon: Rocket },
+          { title: "Framework Guides", description: "Optimized guides for Next.js, Nuxt, Remix, Astro, and more.", icon: BookOpen },
+          { title: "CI/CD Pipelines", description: "Configure build steps, test runners, and deploy hooks.", icon: GitPullRequest },
+          { title: "Infrastructure", description: "Networking, scaling, Docker, and container orchestration.", icon: Server },
         ],
       },
       {
-        title: "Web Deployment Platform",
+        title: "Resources",
         items: [
-          { title: "Docs", description: "Guides and docs for web deployment workflows.", icon: BookOpen },
-          { title: "Agent Docs", description: "Learn setup and optimized prompts for AI agent usage.", icon: Bot },
-          { title: "Release Notes", description: "Track updates and platform improvements.", icon: Ticket },
+          { title: "API Reference", description: "RESTful endpoints for deployments, projects, and domains.", icon: Braces },
+          { title: "CLI Documentation", description: "Manage projects and deployments from your terminal.", icon: Terminal },
+          { title: "Starter Templates", description: "Production-ready boilerplates to kickstart your project.", icon: FileCode2 },
+          { title: "Changelog", description: "Latest platform updates, features, and improvements.", icon: Newspaper },
         ],
       },
     ],
@@ -135,40 +143,26 @@ const navItems = [
     href: "/#contact",
     columns: [
       {
-        title: "Community",
+        title: "Self-Service",
         items: [
-          {
-            title: "Ask our community",
-            description: "Connect with other developers and master new skills.",
-            icon: Users,
-            href: "/support/ask-our-community",
-          },
-          {
-            title: "FAQ",
-            description: "Find answers to common questions.",
-            icon: CircleHelp,
-            href: "/support/faq",
-          },
+          { title: "Documentation", description: "Comprehensive guides for every feature and workflow.", icon: BookOpen, href: "/docs" },
+          { title: "FAQ", description: "Instant answers to the most common platform questions.", icon: CircleHelp, href: "/support/faq" },
+          { title: "System Status", description: "Real-time uptime, incident reports, and maintenance windows.", icon: Activity, href: "/support/faq" },
+          { title: "Community Forum", description: "Ask questions, share solutions, and connect with other devs.", icon: Users, href: "/support/ask-our-community" },
         ],
       },
       {
-        title: "Contact",
+        title: "Direct Support",
         items: [
-          {
-            title: "Chat with the experts",
-            description: "Open a chat and get help from our team.",
-            icon: Headset,
-            href: "/support/chat-with-experts",
-          },
-          { title: "Submit ticket", description: "Get direct support for your project.", icon: Ticket },
+          { title: "Live Chat", description: "Talk with a deployment engineer — average response < 2 min.", icon: Headset, href: "/support/chat-with-experts" },
+          { title: "Submit a Ticket", description: "Open a support case tracked through to resolution.", icon: Ticket, href: "/support/chat-with-experts" },
+          { title: "Priority Support", description: "Dedicated SLA-backed support for Pro and Enterprise plans.", icon: Zap, href: "/support/chat-with-experts" },
+          { title: "Enterprise Sales", description: "Custom contracts, SSO, SLA, and dedicated account managers.", icon: BriefcaseBusiness, href: "/#contact" },
         ],
       },
     ],
   },
-  {
-    label: "Pricing",
-    href: "/pricing/backend-as-a-service",
-  },
+  { label: "Pricing", href: "/pricing/backend-as-a-service" },
 ];
 
 function formatPrice(value: number) {
@@ -201,8 +195,8 @@ export default function BackendPricingPage() {
 
                     {item.columns ? (
                       <div className="pointer-events-none absolute left-0 top-full z-50 pt-0.5 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100">
-                        <div className="w-[780px] overflow-hidden rounded-b-xl border border-slate-200/10 bg-[#020f25] shadow-[0_20px_45px_rgba(0,0,0,0.5)]">
-                          <div className="grid bg-[#031127] sm:grid-cols-2">
+                        <div className={`overflow-hidden rounded-b-xl border border-slate-200/10 bg-[#020f25] shadow-[0_20px_45px_rgba(0,0,0,0.5)] ${item.columns.length > 1 ? 'w-[780px]' : 'w-[360px]'}`}>
+                          <div className={`grid bg-[#031127] ${item.columns.length > 1 ? 'sm:grid-cols-2' : ''}`}>
                             {item.columns.map((column, index) => (
                               <div
                                 key={column.title}
@@ -420,7 +414,7 @@ export default function BackendPricingPage() {
               </div>
 
               <div>
-                <h5 className="text-xl font-semibold text-slate-100">Backend Platform</h5>
+                <h5 className="text-xl font-semibold text-slate-100">Deployment Platform</h5>
                 <ul className="mt-3 space-y-2 text-lg text-slate-400">
                   <li><Link href="/pricing/backend-as-a-service" className="transition hover:text-cyan-200">Pricing</Link></li>
                   <li><Link href="/docs" className="transition hover:text-cyan-200">Docs</Link></li>
@@ -440,9 +434,9 @@ export default function BackendPricingPage() {
               <div>
                 <h5 className="text-xl font-semibold text-slate-100">Learn</h5>
                 <ul className="mt-3 space-y-2 text-lg text-slate-400">
-                  <li><Link href="/docs" className="transition hover:text-cyan-200">What is BaaS?</Link></li>
-                  <li><Link href="/docs" className="transition hover:text-cyan-200">Why use BaaS?</Link></li>
-                  <li><Link href="/docs" className="transition hover:text-cyan-200">Firebase alternatives</Link></li>
+                  <li><Link href="/docs" className="transition hover:text-cyan-200">Deployment Guides</Link></li>
+                  <li><Link href="/docs" className="transition hover:text-cyan-200">CI/CD Pipelines</Link></li>
+                  <li><Link href="/docs" className="transition hover:text-cyan-200">Monitoring & Alerts</Link></li>
                 </ul>
               </div>
             </div>

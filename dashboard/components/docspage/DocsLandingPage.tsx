@@ -1,27 +1,37 @@
 import Link from "next/link";
 import {
+  Activity,
   BookOpen,
-  Braces,
+  Bot,
   Boxes,
+  Braces,
+  BriefcaseBusiness,
   CircleHelp,
   ChevronDown,
+  Clock,
   ArrowRight,
-  Bell,
-  Bot,
-  CloudLightning,
-  Database,
-  HardDrive,
+  Eye,
+  FileCode2,
+  GitBranch,
+  GitPullRequest,
+  Globe,
   Headset,
+  Layers,
   Linkedin,
-  LockKeyhole,
+  Lock,
   MessageCircle,
   MapPin,
-  Radio,
+  Newspaper,
+  Rocket,
+  Server,
+  Shield,
+  Terminal,
   Ticket,
   Twitter,
   Users,
   Youtube,
   Github,
+  Zap,
 } from "lucide-react";
 
 const navItems = [
@@ -30,23 +40,23 @@ const navItems = [
     href: "/#product",
     columns: [
       {
-        title: "Backend as a Service",
+        title: "Deploy & Operate",
         items: [
-          { title: "Database", description: "Store and stack relational data in real-time, globally.", icon: Database },
-          { title: "Real-time", description: "Track database changes and user presence in real-time.", icon: Radio },
-          { title: "Cloud Functions", description: "Add Server-side business logic using cloud code functions.", icon: CloudLightning },
-          { title: "GraphQL, Rest APIs & SDKs", description: "We speak your language.", icon: Braces },
-          { title: "File Storage", description: "Easy, secure cloud file storage and delivery.", icon: HardDrive },
-          { title: "Authentication", description: "Complete user management system.", icon: LockKeyhole },
-          { title: "Notifications", description: "Validate, engage, communicate with users using notifications.", icon: Bell },
+          { title: "Git Push to Deploy", description: "Connect your repo and ship on every push — zero config required.", icon: GitBranch, href: "/features/git-push-to-deploy" },
+          { title: "Preview Deployments", description: "Every pull request gets its own live URL for instant review.", icon: Eye, href: "/features/preview-deployments" },
+          { title: "Instant Rollbacks", description: "Roll back to any previous deployment with a single click.", icon: Clock, href: "/features/instant-rollbacks" },
+          { title: "Auto-Scaling", description: "Containers scale horizontally based on real-time traffic load.", icon: Layers, href: "/features/auto-scaling" },
+          { title: "Edge Network", description: "Deploy to 50+ global edge regions for sub-200ms latency.", icon: Globe, href: "/features/edge-network" },
         ],
       },
       {
-        title: "Web Deployment",
+        title: "Developer Experience",
         items: [
-          { title: "Web Deployment", description: "Deploy full-stack web applications directly from GitHub.", icon: Boxes },
-          { title: "AI Agent", description: "Instantly turn ideas into fully provisioned, production-ready apps.", icon: Bot },
-          { title: "MCP", description: "Model Context Protocol integration.", icon: Braces },
+          { title: "Real-time Monitoring", description: "Live CPU, memory, bandwidth dashboards and intelligent alerts.", icon: Activity, href: "/features/real-time-monitoring" },
+          { title: "Build Logs & Insights", description: "Stream build and runtime logs with full-text search and filters.", icon: Terminal, href: "/features/build-logs" },
+          { title: "Secrets & Env Vars", description: "Encrypted environment variables with per-branch overrides.", icon: Lock, href: "/features/secrets-env-vars" },
+          { title: "Custom Domains & SSL", description: "Free TLS certificates and one-click custom domain routing.", icon: Shield, href: "/features/custom-domains-ssl" },
+          { title: "AI Deploy Agent", description: "Describe your app in plain language — the agent provisions everything.", icon: Bot, href: "/features/ai-deploy-agent" },
         ],
       },
     ],
@@ -56,19 +66,21 @@ const navItems = [
     href: "/docs",
     columns: [
       {
-        title: "Backend Platform",
+        title: "Learn",
         items: [
-          { title: "Guides", description: "Step-by-step workflows for using your backend.", icon: BookOpen },
-          { title: "API Reference", description: "Examples and generated docs from APIs and SDKs.", icon: Braces },
-          { title: "App Templates", description: "Example apps and starter projects.", icon: Boxes },
+          { title: "Quick Start", description: "Go from zero to deployed in under 5 minutes.", icon: Rocket },
+          { title: "Framework Guides", description: "Optimized guides for Next.js, Nuxt, Remix, Astro, and more.", icon: BookOpen },
+          { title: "CI/CD Pipelines", description: "Configure build steps, test runners, and deploy hooks.", icon: GitPullRequest },
+          { title: "Infrastructure", description: "Networking, scaling, Docker, and container orchestration.", icon: Server },
         ],
       },
       {
-        title: "Support",
+        title: "Resources",
         items: [
-          { title: "FAQ", description: "Find answers to common questions quickly.", icon: CircleHelp },
-          { title: "Chat with experts", description: "Open a chat and get help from our team.", icon: Headset },
-          { title: "Submit ticket", description: "Get direct support for your project.", icon: Ticket },
+          { title: "API Reference", description: "RESTful endpoints for deployments, projects, and domains.", icon: Braces },
+          { title: "CLI Documentation", description: "Manage projects and deployments from your terminal.", icon: Terminal },
+          { title: "Starter Templates", description: "Production-ready boilerplates to kickstart your project.", icon: FileCode2 },
+          { title: "Changelog", description: "Latest platform updates, features, and improvements.", icon: Newspaper },
         ],
       },
     ],
@@ -78,67 +90,26 @@ const navItems = [
     href: "/support/faq",
     columns: [
       {
-        title: "Community",
+        title: "Self-Service",
         items: [
-          {
-            title: "Ask our community",
-            description: "Connect with other developers and master new skills.",
-            icon: Users,
-            href: "/support/ask-our-community",
-          },
-          {
-            title: "FAQ",
-            description: "Find answers to common questions.",
-            icon: CircleHelp,
-            href: "/support/faq",
-          },
+          { title: "Documentation", description: "Comprehensive guides for every feature and workflow.", icon: BookOpen, href: "/docs" },
+          { title: "FAQ", description: "Instant answers to the most common platform questions.", icon: CircleHelp, href: "/support/faq" },
+          { title: "System Status", description: "Real-time uptime, incident reports, and maintenance windows.", icon: Activity, href: "/support/faq" },
+          { title: "Community Forum", description: "Ask questions, share solutions, and connect with other devs.", icon: Users, href: "/support/ask-our-community" },
         ],
       },
       {
-        title: "Contact",
+        title: "Direct Support",
         items: [
-          {
-            title: "Chat with the experts",
-            description: "Open a chat and get help from our team.",
-            icon: Headset,
-            href: "/support/chat-with-experts",
-          },
-          { title: "Submit ticket", description: "Get direct support for your project.", icon: Ticket },
+          { title: "Live Chat", description: "Talk with a deployment engineer — average response < 2 min.", icon: Headset, href: "/support/chat-with-experts" },
+          { title: "Submit a Ticket", description: "Open a support case tracked through to resolution.", icon: Ticket, href: "/support/chat-with-experts" },
+          { title: "Priority Support", description: "Dedicated SLA-backed support for Pro and Enterprise plans.", icon: Zap, href: "/support/chat-with-experts" },
+          { title: "Enterprise Sales", description: "Custom contracts, SSO, SLA, and dedicated account managers.", icon: BriefcaseBusiness, href: "/#contact" },
         ],
       },
     ],
   },
-  {
-    label: "Pricing",
-    href: "/pricing/backend-as-a-service",
-  },
-];
-
-const backendResources = [
-  {
-    title: "Guides",
-    description: "Step-by-step workflows to deploy and scale your applications.",
-    icon: BookOpen,
-    href: "/support/faq",
-  },
-  {
-    title: "API Reference",
-    description: "Auto-generated references for APIs, request payloads, and integrations.",
-    icon: Braces,
-    href: "/support/chat-with-experts",
-  },
-  {
-    title: "App Templates",
-    description: "Starter templates and practical blueprints to launch faster.",
-    icon: Boxes,
-    href: "/register",
-  },
-  {
-    title: "FAQ",
-    description: "Answers to common platform and deployment questions.",
-    icon: CircleHelp,
-    href: "/support/faq",
-  },
+  { label: "Pricing", href: "/pricing/backend-as-a-service" },
 ];
 
 const containerResources = [
@@ -152,7 +123,7 @@ const containerResources = [
 
 const footerColumns = [
   {
-    title: "Backend Platform",
+    title: "Deployment Platform",
     links: [
       { label: "Pricing", href: "/pricing/backend-as-a-service" },
       { label: "Docs", href: "/docs" },
@@ -170,10 +141,10 @@ const footerColumns = [
   {
     title: "Learn",
     links: [
-      { label: "What is a Backend as a Service?", href: "/docs" },
-      { label: "Why Use a Backend as a Service?", href: "/docs" },
-      { label: "What are the best Firebase alternatives?", href: "/docs" },
-      { label: "InnoDeploy vs Firebase", href: "/docs" },
+      { label: "Deployment Guides", href: "/docs" },
+      { label: "CI/CD Pipelines", href: "/docs" },
+      { label: "Monitoring & Alerts", href: "/docs" },
+      { label: "InnoDeploy vs Heroku", href: "/docs" },
     ],
     badge: "View All",
   },
@@ -211,8 +182,8 @@ export default function DocsLandingPage() {
 
                     {item.columns ? (
                       <div className="pointer-events-none absolute left-0 top-full z-50 pt-0.5 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100">
-                        <div className="w-[780px] overflow-hidden rounded-b-xl border border-slate-200/10 bg-[#020f25] shadow-[0_20px_45px_rgba(0,0,0,0.5)]">
-                          <div className="grid bg-[#031127] sm:grid-cols-2">
+                        <div className={`overflow-hidden rounded-b-xl border border-slate-200/10 bg-[#020f25] shadow-[0_20px_45px_rgba(0,0,0,0.5)] ${item.columns.length > 1 ? 'w-[780px]' : 'w-[360px]'}`}>
+                          <div className={`grid bg-[#031127] ${item.columns.length > 1 ? 'sm:grid-cols-2' : ''}`}>
                             {item.columns.map((column, index) => (
                               <div
                                 key={column.title}
@@ -309,40 +280,6 @@ export default function DocsLandingPage() {
           </div>
 
           <div className="mx-auto mt-16 max-w-[1160px] px-5 sm:px-8">
-            <div className="flex items-center justify-center gap-3">
-              <div className="rounded-lg border border-emerald-400/30 bg-emerald-400/10 p-2">
-                <Database className="h-5 w-5 text-emerald-300" />
-              </div>
-              <h2 className="text-4xl font-bold text-slate-50">Backend as a Service</h2>
-            </div>
-
-            <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-              {backendResources.map((resource) => (
-                <article
-                  key={resource.title}
-                  className="group rounded-2xl border border-slate-200/10 bg-gradient-to-b from-[#1a2f4d]/90 to-[#142843]/88 p-6 shadow-[inset_0_1px_0_rgba(148,163,184,0.08)] transition duration-300 hover:border-emerald-400/35 hover:from-[#17334f]/90 hover:to-[#12314a]/90"
-                >
-                  <div className="rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-2.5 w-fit">
-                    <resource.icon className="h-6 w-6 text-cyan-200" />
-                  </div>
-                  <h3 className="mt-5 text-3xl font-semibold text-slate-100">{resource.title}</h3>
-                  <p className="mt-3 text-base leading-7 text-slate-300/85">{resource.description}</p>
-
-                  <Link
-                    href={resource.href}
-                    className="mt-6 inline-flex items-center gap-2 text-base font-semibold text-emerald-300 transition group-hover:text-emerald-200"
-                  >
-                    Learn more
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="border-b border-slate-200/10 py-16 sm:py-20">
-          <div className="mx-auto max-w-[1160px] px-5 sm:px-8">
             <div className="flex items-center justify-center gap-3">
               <div className="rounded-lg border border-cyan-300/25 bg-cyan-300/10 p-2">
                 <Boxes className="h-5 w-5 text-cyan-200" />
