@@ -2,12 +2,6 @@
 
 import { useEffect, useState } from "react";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   AreaChart,
   Area,
   XAxis,
@@ -72,49 +66,57 @@ export default function DeployActivityChart() {
   }, []);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">{t(language, "activity.title")}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {data.length === 0 && <p className="text-sm text-muted-foreground">{t(language, "activity.none")}</p>}
+    <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0a1628]/60">
+      <div className="border-b border-white/[0.06] px-6 py-4">
+        <h2 className="text-lg font-semibold text-white">{t(language, "activity.title")}</h2>
+      </div>
+      <div className="p-6">
+        {data.length === 0 && <p className="text-sm text-slate-500">{t(language, "activity.none")}</p>}
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <defs>
+                <linearGradient id="deployGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 11, fill: "#64748b" }}
                 tickLine={false}
                 axisLine={false}
                 interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 11, fill: "#64748b" }}
                 tickLine={false}
                 axisLine={false}
                 allowDecimals={false}
               />
               <Tooltip
                 contentStyle={{
-                  borderRadius: "0.5rem",
-                  border: "1px solid hsl(var(--border))",
-                  background: "hsl(var(--card))",
+                  borderRadius: "0.75rem",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "#0a1628",
                   fontSize: 12,
+                  color: "#e2e8f0",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
                 }}
+                labelStyle={{ color: "#94a3b8" }}
               />
               <Area
                 type="monotone"
                 dataKey="deploys"
-                stroke="hsl(221.2, 83.2%, 53.3%)"
-                fill="hsl(221.2, 83.2%, 53.3%)"
-                fillOpacity={0.15}
+                stroke="#06b6d4"
+                fill="url(#deployGradient)"
                 strokeWidth={2}
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

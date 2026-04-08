@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import Sidebar from "@/components/shared/Sidebar";
 import Navbar from "@/components/shared/Navbar";
@@ -12,7 +12,7 @@ import NotificationTestButton from "@/components/alertspage/NotificationTestButt
 import { alertApi } from "@/lib/apiClient";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import { localeFromLanguage, t } from "@/lib/settingsI18n";
-import { ShieldAlert } from "lucide-react";
+import { ShieldAlert, Siren, BellRing, Bell, RefreshCcw, CheckCircle2 } from "lucide-react";
 import type { AlertRuleConfig, ProjectAlert } from "@/types";
 
 const initialRules: AlertRuleConfig = {
@@ -41,27 +41,26 @@ export default function AlertsPage() {
   const [error, setError] = useState<string | null>(null);
   const language = useLanguagePreference();
 
+  const loadAlerts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await alertApi.getAlerts();
+      setAlerts(data.alerts as ProjectAlert[]);
+      if (data.rules) {
+        setRules({ ...initialRules, ...(data.rules as Partial<AlertRuleConfig>) });
+      }
+    } catch (loadError: unknown) {
+      setError(loadError instanceof Error ? loadError.message : t(language, "alerts.pageTitle"));
+    } finally {
+      setLoading(false);
+    }
+  }, [language]);
+
   useEffect(() => {
     if (!isReady) return;
-
-    const loadAlerts = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const { data } = await alertApi.getAlerts();
-        setAlerts(data.alerts as ProjectAlert[]);
-        if (data.rules) {
-          setRules({ ...initialRules, ...(data.rules as Partial<AlertRuleConfig>) });
-        }
-      } catch (loadError: unknown) {
-        setError(loadError instanceof Error ? loadError.message : t(language, "alerts.pageTitle"));
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadAlerts();
-  }, [isReady]);
+  }, [isReady, loadAlerts]);
 
   const projects = useMemo(() => Array.from(new Set(alerts.map((alert) => alert.project))), [alerts]);
 
@@ -80,6 +79,19 @@ export default function AlertsPage() {
   }, [alerts, dateRange, project, ruleType, search, severity]);
 
   const selectedAlert = filteredAlerts.find((alert) => alert.id === selectedAlertId) ?? alerts.find((alert) => alert.id === selectedAlertId) ?? null;
+
+  const statCards = useMemo(() => {
+    const critical = alerts.filter((a) => a.severity === "critical").length;
+    const warning = alerts.filter((a) => a.severity === "warning").length;
+    const info = alerts.filter((a) => a.severity === "info").length;
+    const acknowledged = alerts.filter((a) => a.status === "acknowledged" || a.status === "resolved").length;
+    return [
+      { label: "Critical", value: critical, icon: Siren, color: "text-rose-400", borderColor: "border-rose-500/20", gradient: "from-rose-500/20 to-rose-500/5" },
+      { label: "Warning", value: warning, icon: BellRing, color: "text-amber-400", borderColor: "border-amber-500/20", gradient: "from-amber-500/20 to-amber-500/5" },
+      { label: "Info", value: info, icon: Bell, color: "text-blue-400", borderColor: "border-blue-500/20", gradient: "from-blue-500/20 to-blue-500/5" },
+      { label: "Acknowledged", value: acknowledged, icon: CheckCircle2, color: "text-emerald-400", borderColor: "border-emerald-500/20", gradient: "from-emerald-500/20 to-emerald-500/5" },
+    ];
+  }, [alerts]);
 
   if (!isReady) return null;
 
@@ -126,12 +138,43 @@ export default function AlertsPage() {
                 <p className="text-sm text-slate-500">{t(language, "alerts.pageSubtitle")}</p>
               </div>
             </div>
-            <NotificationTestButton onTest={handleNotificationTest} />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => void loadAlerts()}
+                disabled={loading}
+                className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-sm font-medium text-slate-300 transition-all hover:border-white/[0.15] hover:bg-white/[0.06] disabled:opacity-50"
+              >
+                <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                {loading ? "Refreshing..." : "Refresh"}
+              </button>
+              <NotificationTestButton onTest={handleNotificationTest} />
+            </div>
           </div>
 
           {error && (
             <div className="relative rounded-xl border border-rose-500/20 bg-rose-500/[0.06] px-4 py-3 text-sm text-rose-300 backdrop-blur-sm">{error}</div>
           )}
+
+          {/* Stat cards */}
+          <div className="relative grid gap-4 grid-cols-2 lg:grid-cols-4">
+            {statCards.map((stat, index) => (
+              <div
+                key={stat.label}
+                className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0a1628]/60 p-5 transition-all duration-300 hover:border-white/[0.12] hover:shadow-[0_0_40px_rgba(0,0,0,0.3)] animate-rise-fade"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
+                <div className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full bg-gradient-to-b ${stat.gradient.replace('/20', '/60').replace('/5', '/30')}`} />
+                <div className="relative flex items-center justify-between">
+                  <p className="text-xs font-medium uppercase tracking-[0.1em] text-slate-500">{stat.label}</p>
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-xl border ${stat.borderColor} bg-white/[0.03]`}>
+                    <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                  </div>
+                </div>
+                <p className="relative mt-3 text-3xl font-bold tracking-tight text-white">{stat.value}</p>
+              </div>
+            ))}
+          </div>
 
           <div className="relative">
             <AlertFilterBar

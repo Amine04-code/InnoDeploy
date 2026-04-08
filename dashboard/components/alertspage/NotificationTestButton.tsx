@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { BellRing, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import { t } from "@/lib/settingsI18n";
 
@@ -24,9 +23,13 @@ export default function NotificationTestButton({ onTest }: NotificationTestButto
   };
 
   return (
-    <Button size="sm" onClick={handleClick} disabled={loading}>
-      {loading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <BellRing className="mr-1.5 h-3.5 w-3.5" />}
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      className="inline-flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-2 text-sm font-medium text-amber-300 transition-all hover:border-amber-500/30 hover:bg-amber-500/[0.12] disabled:opacity-50"
+    >
+      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <BellRing className="h-4 w-4" />}
       {loading ? t(language, "alerts.notificationSending") : t(language, "alerts.notificationTest")}
-    </Button>
+    </button>
   );
 }
